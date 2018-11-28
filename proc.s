@@ -50,13 +50,21 @@ commit_scheduling:
 .proc sys_tick
         enter_isr
 
+
         jsr     scheduler
+scheduler_disabled:
 
         exit_isr
 .endproc
 
 ; int create_proc(void)
 .proc create_proc
+        sep     #$20
+        lda     enable_scheduler
+        pha
+        lda     #0
+        sta     enable_scheduler
+
         rep     #$30
         ldx     #0
 
@@ -69,23 +77,28 @@ next_proc:
         blt     next_proc
 
 failed:
+        sep     #$20
+        pla
+        sta     enable_scheduler
+        rep     #$30
         lda     #0
         rts
 
 found_empty_proc:
         pea     .sizeof(Process)
         jsr     malloc
+        rep     #$30
+        ply
 
         ; If malloc fails, exit in a failure state
         cmp     #0
         beq     failed
 
-        ; Store new process as next of current, and put existing next in Y
+        ; Put existing next in Y
         rep     #$30
         ldx     current_process_p
         ldy     Process::next,x
-        sta     Process::next,x
-        
+
         ; Put address of new process struct into X
         tax
 
@@ -102,8 +115,18 @@ found_empty_proc:
 
         ; Store existing next in new process
         sty     Process::next,x
-        
+
+        ; Store new process as next of existing
+        txa
+        ldx     current_process_p
+        sta     Process::next,x
+
         ; Return with new PID in A
+        tax
+        sep     #$20
+        pla
+        sta     enable_scheduler
+        rep     #$30
         lda     Process::pid,x
         rts
 .endproc
@@ -111,23 +134,29 @@ found_empty_proc:
 .proc find_previous_proc
         setup_frame
 
+        sep     #$20
+        lda     enable_scheduler
+        pha
+        lda     #0
+        sta     enable_scheduler
+
         rep     #$30
         ldx     z:1
 
 loop:
         ; Get next of this one
         lda     Process::next,x
-        
+
         ; Compare to the one to be found
         cmp     z:1
-        
+
         ; If not the same, move next to X and repeat
         beq     found_prev
         tax
         jmp     loop
-        
+
 found_prev:
-        
+
         restore_frame
         rts
 .endproc
@@ -136,10 +165,15 @@ found_prev:
 .proc destroy_proc
         setup_frame
         
+        sep     #$20
+        pla
+        sta     enable_scheduler
+        rep     #$30
+
         ; Load PID to destroy
         rep     #$30
         lda     z:1
-        
+
         ; Get address of process struct into X
         asl
         tax
@@ -149,48 +183,55 @@ found_prev:
         ; Mark as not running
         lda     #0
         sta     Process::running,x
-        
+
         ; Get the next of the process to be destroyed and push to stack
         lda     Process::next,x
         pha
-        
+
         ; Push address of process struct to be destroyed
         phx
-        
+
         ; Find previous of the one to be destroyed and load to X
         jsr     find_previous_proc
         tax
-        
+
         ; Load the next of the process to be destroyed to A
         rep     #$30
         lda     3,s
-        
+
         ; Store the next of the process to be destroyed to the next of the previous
         sta     Process::next,x
-        
+
         ; Load address of process struct to be destroyed to X
         plx
-        
+
         ; Pop the next of the process to be destroyed from stack
         ply
-        
+
         ; The process to be removed has now been removed from the execution chain
-        
+
         ; TODO: Release resources
-        
+
         ; Store struct address for use by free
         phx
-        
+
         ; Remove process from process table
         lda     z:1
         asl
         tax
         lda     #0
         sta     proc_table,x
-        
+
         ; Free struct of process to be destroyed
         jsr     free
+        rep     #$30
+        pla
         
+        sep     #$20
+        pla
+        sta     enable_scheduler
+        rep     #$30
+
         restore_frame
         rts
 .endproc
@@ -203,3 +244,6 @@ current_process_p:
 
 proc_table:
         .res    2 * PROC_NUM
+
+enable_scheduler:
+        .byte   0
