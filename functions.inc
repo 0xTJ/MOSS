@@ -3,7 +3,6 @@
         ; Store D on stack and set new stack frame
         tsc
         phd
-        inc
         tcd
 .endmacro
 
