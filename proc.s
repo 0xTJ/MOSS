@@ -55,6 +55,7 @@ commit_scheduling:
         exit_isr
 .endproc
 
+; int create_proc(void)
 .proc create_proc
         rep     #$30
         ldx     #0
@@ -131,6 +132,7 @@ found_prev:
         rts
 .endproc
 
+; void destroy_proc(int pid)
 .proc destroy_proc
         setup_frame
         
@@ -186,7 +188,7 @@ found_prev:
         lda     #0
         sta     proc_table,x
         
-        ; Free struct
+        ; Free struct of process to be destroyed
         jsr     free
         
         restore_frame
