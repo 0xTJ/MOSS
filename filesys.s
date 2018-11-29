@@ -7,6 +7,39 @@
 .include "functions.inc"
 .include "filesys.inc"
 
+; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
+.proc mount_fs
+        setup_frame
+        
+        ; Load mounted into X
+        ldx     z:3
+        
+        ; Check that the mounted is a directory
+        lda     FSNode::flags,x
+        and     #FS_TYPE_BITS
+        cmp     FS_DIRECTORY
+        bne     invalid_type
+        
+        ; Move mounted to Y
+        txy
+
+        ; Load mount_point into X
+        rep     #$30
+        ldx     z:1
+        
+        ; Store mounted into mount point's ptr
+        sty     FSNode::ptr,x
+        
+        ; Add mount point flag to flags
+        lda     FSNode::flags,x
+        ora     FS_MOUNTPOINT
+        sta     FSNode::flags,x
+
+invalid_type:
+        restore_frame
+        rts
+.endproc
+
 ; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc read_fs
         setup_frame

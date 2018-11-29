@@ -11,7 +11,7 @@
 .proc initrd_init
         rep     #$30
 
-        ; Allocate memory for filesystem node
+        ; Allocate memory for file-system node
         pea     .sizeof(FSNode)
         jsr     malloc
         rep     #$30

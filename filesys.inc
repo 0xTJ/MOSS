@@ -1,10 +1,11 @@
-FS_FILE        = $01
-FS_DIRECTORY   = $02
-FS_CHARDEVICE  = $03
-FS_BLOCKDEVICE = $04
-FS_PIPE        = $05
-FS_SYMLINK     = $06
-FS_MOUNTPOINT  = $08
+FS_FILE         = $01
+FS_DIRECTORY    = $02
+FS_CHARDEVICE   = $03
+FS_BLOCKDEVICE  = $04
+FS_PIPE         = $05
+FS_SYMLINK      = $06
+FS_MOUNTPOINT   = $08
+FS_TYPE_BITS    = $0F
 
 .struct FSNode
         name    .byte   16
