@@ -1,8 +1,8 @@
 .macro setup_frame
         rep     #$30
         ; Store D on stack and set new stack frame
-        tsc
         phd
+        tsc
         tcd
 .endmacro
 
@@ -19,7 +19,6 @@
 .endif
 
         tdc
-        sub     3
         tcs
         pld
 
