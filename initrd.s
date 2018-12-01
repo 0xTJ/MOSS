@@ -1,4 +1,5 @@
 .p816
+.smart
 
 .macpack generic
 
@@ -7,7 +8,7 @@
 .include "functions.inc"
 .include "filesys.inc"
 
-; struct FSNode *initrd_init(void)
+; struct FSNode *initrd_create(struct Device *dev)
 .proc initrd_init
         rep     #$30
 
@@ -41,11 +42,9 @@
         stz     FSNode::write,x
         stz     FSNode::open,x
         stz     FSNode::close,x
-        pea     initrd_readdir
-        pla
+        lda     initrd_readdir
         sta     FSNode::readdir,x
-        pea     initrd_finddir
-        pla
+        lda     initrd_finddir
         sta     FSNode::finddir,x
 
         ; Zero the pointer

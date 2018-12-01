@@ -1,4 +1,5 @@
 .p816
+.smart
 
 .macpack generic
 
@@ -26,35 +27,41 @@
 
 .export main
 .proc main
+        rep     #$30
+
         ; Load vectors
         pea     sys_tick
         pea     UNIRQT2
         jsr     install_user_vector_jsr_abs
+        ply
+        ply
         pea     sys_call
         pea     COPIRQ
         jsr     install_user_vector_jsr_abs
+        ply
+        ply
         
         ; Disable T2
-        lda     TCR
-        and     #.lobyte(~(1 << 2))
-        sta     TCR
+        ; lda     TCR
+        ; and     #.lobyte(~(1 << 2))
+        ; sta     TCR
         ; Clear pending T2 interrupt
-        lda     #1 << 2
-        sta     TIFR
+        ; lda     #1 << 2
+        ; sta     TIFR
         ; Enable T2 interrupt
-        lda     TCR
-        ora     #1 << 2
-        sta     TCR
+        ; lda     TCR
+        ; ora     #1 << 2
+        ; sta     TCR
         ; Load T2 values
-        lda     .lobyte(4000)
-        sta     T2CL
-        lda     .hibyte(4000)
-        sta     T2CH
+        ; lda     #.lobyte(4000)
+        ; sta     T2CL
+        ; lda     #.hibyte(4000)
+        ; sta     T2CH
         
         ; Enable T2
-        lda     TCR
-        ora     #1 << 2
-        sta     TCR
+        ; lda     TCR
+        ; ora     #1 << 2
+        ; sta     TCR
         
 loop:   jmp     loop
 .endproc

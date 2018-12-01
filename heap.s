@@ -1,4 +1,5 @@
 .p816
+.smart
 
 .macpack generic
 .macpack longbranch
@@ -21,11 +22,9 @@
 
 .constructor heap_init
 .proc heap_init
-        rep     #$30
-        pea     __HEAP_LOAD__
-        plx
-        pea     __HEAP_SIZE__ - .sizeof(HeapTag)
-        pla
+        rep     #$30 
+        ldx     #__HEAP_LOAD__
+        lda     #__HEAP_SIZE__ - .sizeof(HeapTag)
         sta     HeapTag::size,x
         lda     #0
         sta     HeapTag::next,x
@@ -42,9 +41,8 @@
         setup_frame
 
         rep     #$30
-        lda     z:1
-        pea     __HEAP_LOAD__
-        plx
+        lda     z:3
+        ldx     #__HEAP_LOAD__
         jmp     skip_next_inc
 
 next:
@@ -60,7 +58,7 @@ skip_next_inc:
         
         ; Prevent fragmentation
         add     #.sizeof(HeapTag) + 8
-        cmp     HeapTag::size,x
+        cmp     a:HeapTag::size,x
         bgt     skip_resize
         
         ; Resize fragment
@@ -75,23 +73,24 @@ skip_next_inc:
         lda     HeapTag::size,x ; Size of the fragment to be split
         sub     #.sizeof(HeapTag)
         sub     1,s
-        sta     HeapTag::size,y ; Size of new fragment
+        sta     a:HeapTag::size,y ; Size of new fragment
         pla
-        sta     HeapTag::size,x
+        sta     a:HeapTag::size,x
         
         ; Update next pointers
-        lda     HeapTag::next,x
-        sta     HeapTag::next,y
-        sty     HeapTag::next,x
+        lda     a:HeapTag::next,x
+        sta     a:HeapTag::next,y
+        tya
+        sta     a:HeapTag::next,x
         
         ; Update new used status
         lda     #0
-        sta     HeapTag::used,y
+        sta     a:HeapTag::used,y
         
 skip_resize:
         sep     #$20
         lda     #1
-        sta     HeapTag::used,x
+        sta     a:HeapTag::used,x
         rep     #$20
         txa
         add     #.sizeof(HeapTag)
@@ -107,10 +106,10 @@ not_found:   ; A should already contain NULL if it was not found
 .proc free
         setup_frame
 
-        lda     z:1
+        lda     z:3
         sub     #.sizeof(HeapTag)
         tax
-        stz     HeapTag::used,x
+        stz     a:HeapTag::used,x
         
         restore_frame
         rts

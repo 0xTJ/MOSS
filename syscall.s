@@ -1,4 +1,5 @@
 .p816
+.smart
 
 .macpack generic
 
@@ -82,7 +83,7 @@ syscall putc_serial, 1
         tcs
 
 no_syscall_args:
-        lda     z:1 ; Load Syscall # into A
+        lda     z:3 ; Load Syscall # into A
 
 syscall_call:
         ; Multiply Syscall # by 2

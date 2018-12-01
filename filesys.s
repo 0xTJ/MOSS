@@ -1,4 +1,5 @@
 .p816
+.smart
 
 .macpack generic
 

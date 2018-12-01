@@ -1,7 +1,5 @@
 .p816
 
-.segment "ROM"
-
 .export Alter_Memory            := $00E000
 .export BACKSPACE               := $00E003
                                 ;  $00E006
@@ -57,26 +55,22 @@
 .export UPPER_CASE              := $00E0A3
                                 ;  $00E0A7
 
-.segment "ZP"   ; Must be used with D = $0000
-
-.exportzp TMP0      := $00005D  ; Used by:  
+.export TMP0        := $00005D  ; Used by:  
                                 ;   Dump_It
                                 ;   WR_3_Address
 
-.exportzp TMP2      := $000063  ; Used by:  
+.export TMP2        := $000063  ; Used by:  
                                 ;   Dump_It
                                 ;   GET_3BYTE_ADDRESS
                                 ;   Get_Address
                                 ;   Get_E_Address
                                 ;   Get_S_Address
 
-.exportzp TEMP      := $000070  ; Used by:  
+.export TEMP        := $000070  ; Used by:  
                                 ;   ASCBIN
 
 ; .export TEMP+1    := $000071  ; Used by:  
                                 ;   BINASC
-
-.segment "SP"
 
 ; Vectors
 .export UBRK        := $000100  ; USER -- BREAK VECTOR

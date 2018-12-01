@@ -1,4 +1,5 @@
 .p816
+.smart
 
 .macpack generic
 
@@ -14,6 +15,13 @@ PROC_NUM = 8
 .constructor init_processes
 .proc init_processes
         rep     #$30
+        
+        phd
+        pea     $0000
+        pld
+        brk
+        pld
+        
         pea     .sizeof(Process)
         jsr     malloc
 
@@ -21,23 +29,31 @@ PROC_NUM = 8
         sta     current_process_p
 
         tax
-        sta     Process::next,x
+        sta     a:Process::next,x
         lda     #0
-        sta     Process::pid,x
+        sta     a:Process::pid,x
         lda     #1
-        sta     Process::running,x
+        sta     a:Process::running,x
+        
+        phd
+        pea     $0000
+        pld
+        brk
+        pld
 
         rts
 .endproc
 
 .proc scheduler
+        rep     #$30
+
         ldx     current_process_p
 
 loop_scheduling:
-        lda     Process::next,x
+        lda     a:Process::next,x
         tax
 
-        lda     Process::running,x
+        lda     a:Process::running,x
         bze     loop_scheduling
 
 commit_scheduling:
@@ -69,7 +85,7 @@ scheduler_disabled:
         ldx     #0
 
 next_proc:
-        lda     proc_table,x
+        lda     a:proc_table,x
         bze     found_empty_proc
         inx
         inx
@@ -97,29 +113,29 @@ found_empty_proc:
         ; Put existing next in Y
         rep     #$30
         ldx     current_process_p
-        ldy     Process::next,x
+        ldy     a:Process::next,x
 
         ; Put address of new process struct into X
         tax
 
         ; Get pid from address in table, and store
-        pea     proc_table
-        sub     1,s
+        sub     #proc_table
         lsr
-        sta     Process::pid,x
+        sta     a:Process::pid,x
         pla     ; Pop from stack, and discard
 
         ; Mark as not yet running
         lda     #0
-        sta     Process::running,x
+        sta     a:Process::running,x
 
         ; Store existing next in new process
-        sty     Process::next,x
+        tya
+        sta     a:Process::next,x
 
         ; Store new process as next of existing
         txa
         ldx     current_process_p
-        sta     Process::next,x
+        sta     a:Process::next,x
 
         ; Return with new PID in A
         tax
@@ -127,7 +143,7 @@ found_empty_proc:
         pla
         sta     enable_scheduler
         rep     #$30
-        lda     Process::pid,x
+        lda     a:Process::pid,x
         rts
 .endproc
 
@@ -141,14 +157,14 @@ found_empty_proc:
         sta     enable_scheduler
 
         rep     #$30
-        ldx     z:1
+        ldx     z:3
 
 loop:
         ; Get next of this one
-        lda     Process::next,x
+        lda     a:Process::next,x
 
         ; Compare to the one to be found
-        cmp     z:1
+        cmp     z:3
 
         ; If not the same, move next to X and repeat
         beq     found_prev
@@ -172,7 +188,7 @@ found_prev:
 
         ; Load PID to destroy
         rep     #$30
-        lda     z:1
+        lda     z:3
 
         ; Get address of process struct into X
         asl
@@ -182,10 +198,10 @@ found_prev:
 
         ; Mark as not running
         lda     #0
-        sta     Process::running,x
+        sta     a:Process::running,x
 
         ; Get the next of the process to be destroyed and push to stack
-        lda     Process::next,x
+        lda     a:Process::next,x
         pha
 
         ; Push address of process struct to be destroyed
@@ -200,7 +216,7 @@ found_prev:
         lda     3,s
 
         ; Store the next of the process to be destroyed to the next of the previous
-        sta     Process::next,x
+        sta     a:Process::next,x
 
         ; Load address of process struct to be destroyed to X
         plx
@@ -216,11 +232,11 @@ found_prev:
         phx
 
         ; Remove process from process table
-        lda     z:1
+        lda     z:3
         asl
         tax
         lda     #0
-        sta     proc_table,x
+        sta     a:proc_table,x
 
         ; Free struct of process to be destroyed
         jsr     free

@@ -1,0 +1,3 @@
+.struct Device
+        
+.endstruct

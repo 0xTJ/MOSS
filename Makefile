@@ -9,7 +9,10 @@ AS_SRC = $(wildcard *.s)
 C_SRC = $(wildcard *.c)
 OBJS = $(AS_SRC:.s=.o)
 
-all: $(TARGET)
+all: $(TARGET).mot
+
+$(TARGET).mot: $(TARGET)
+	bin2mot -O0x6000 -L0x650 -2 -H $<
 
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
