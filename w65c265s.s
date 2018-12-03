@@ -19,7 +19,7 @@
 .export PDD4    := $00DF24
 .export PDD5    := $00DF25
 .export PDD6    := $00DF26
-.export PDD7    := $00DF27
+.export PCS7    := $00DF27
 .export CS1     := $00DFC0
 
 ; Control and Status Registers

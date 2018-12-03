@@ -5,6 +5,8 @@
 
 .autoimport
 
+.include "functions.inc"
+
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
 
@@ -14,7 +16,7 @@
 .proc install_user_vector_jsr_abs
         rep     #$30
         
-        lda     #$4C ; JMP ABS
+        lda     #$5C ; JMP far
         ldy     #0
         sta     (3,s),y
         
@@ -35,33 +37,38 @@
         jsr     install_user_vector_jsr_abs
         ply
         ply
-        pea     sys_call
-        pea     COPIRQ
-        jsr     install_user_vector_jsr_abs
-        ply
-        ply
+        ; pea     sys_call
+        ; pea     COPIRQ
+        ; jsr     install_user_vector_jsr_abs
+        ; ply
+        ; ply
         
         ; Disable T2
-        ; lda     TCR
-        ; and     #.lobyte(~(1 << 2))
-        ; sta     TCR
+        sep     #$20
+        lda     TER
+        and     #.lobyte(~(1 << 2))
+        sta     TER
         ; Clear pending T2 interrupt
-        ; lda     #1 << 2
-        ; sta     TIFR
+        lda     #1 << 2
+        sta     TIFR
         ; Enable T2 interrupt
-        ; lda     TCR
-        ; ora     #1 << 2
-        ; sta     TCR
+        lda     TIER
+        ora     #1 << 2
+        sta     TIER
         ; Load T2 values
-        ; lda     #.lobyte(4000)
-        ; sta     T2CL
-        ; lda     #.hibyte(4000)
-        ; sta     T2CH
+        lda     #.lobyte($4000)
+        sta     T2CL
+        lda     #.hibyte($4000)
+        sta     T2CH
+        
+        ; Show P7 on LEDS
+        stz     PCS7
         
         ; Enable T2
-        ; lda     TCR
-        ; ora     #1 << 2
-        ; sta     TCR
+        lda     TER
+        ora     #1 << 2
+        sta     TER
         
-loop:   jmp     loop
+loop:   safe_brk
+        jmp     loop
 .endproc

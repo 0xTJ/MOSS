@@ -16,14 +16,10 @@ PROC_NUM = 8
 .proc init_processes
         rep     #$30
         
-        phd
-        pea     $0000
-        pld
-        brk
-        pld
-        
         pea     .sizeof(Process)
         jsr     malloc
+        rep     #$30
+        ply
 
         sta     proc_table + 0
         sta     current_process_p
@@ -34,12 +30,6 @@ PROC_NUM = 8
         sta     a:Process::pid,x
         lda     #1
         sta     a:Process::running,x
-        
-        phd
-        pea     $0000
-        pld
-        brk
-        pld
 
         rts
 .endproc
@@ -65,23 +55,34 @@ commit_scheduling:
 .interruptor sys_tick
 .proc sys_tick
         enter_isr
-
-
+        
+        ; Clear interrupt
+        sep     #$20
+        lda     #1 << 2
+        sta     TIFR
+        
+        ; Enable interrupts
+        cli
+        
+        ; Increment activity counter
+        lda     PD7
+        inc
+        sta     PD7
+        
         jsr     scheduler
-scheduler_disabled:
 
         exit_isr
+        rti
 .endproc
 
 ; int create_proc(void)
 .proc create_proc
-        sep     #$20
+        sep     #$30
         lda     enable_scheduler
         pha
         lda     #0
         sta     enable_scheduler
 
-        rep     #$30
         ldx     #0
 
 next_proc:
@@ -258,6 +259,7 @@ found_prev:
 current_process_p:
         .addr   0
 
+.export proc_table
 proc_table:
         .res    2 * PROC_NUM
 

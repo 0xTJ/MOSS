@@ -1,3 +1,18 @@
+.macro safe_brk
+        ; Fix ROM functions not allowing D != 0
+        php
+        phd
+        pea     $0000
+        pld
+        
+        brk
+        nop
+        
+        ; Restore D
+        pld
+        plp
+.endmacro
+
 .macro setup_frame
         rep     #$30
         ; Store D on stack and set new stack frame
@@ -77,31 +92,32 @@
         ; Store Data Bank as 8-bit
         sep     #$20
         pla
-        sta     Process::reg_db,x
+        sta     a:Process::reg_db,x
 
         ; Store Accumulator as 16-bit
         rep     #$20
         pla
-        sta     Process::reg_c,x
+        sta     a:Process::reg_c,x
 
         ; Store X and Y, all as 16-bit
         pla
-        sta     Process::reg_x,x
-        sty     Process::reg_y,x
+        sta     a:Process::reg_x,x
+        tya
+        sta     a:Process::reg_y,x
 
         ; Store P where E matters as 8-bit
         sep     #$20
         pla
-        sta     Process::bit_e,x
+        sta     a:Process::bit_e,x
 
         ; Store Direct Register as 16-bit
         rep     #$20
         tdc
-        sta     Process::reg_d,x
+        sta     a:Process::reg_d,x
 
         ; Store Stack Pointer as 16-bit
         tsc
-        sta     Process::reg_sp,x
+        sta     a:Process::reg_sp,x
 .endmacro
 
 .macro exit_isr
@@ -110,30 +126,31 @@
 
         ; Load Stack Pointer as 16-bit
         rep     #$20
-        lda     Process::reg_sp,x
+        lda     a:Process::reg_sp,x
         tcs
 
         ; Load Direct Register as 16-bit
-        lda     Process::reg_d,x
+        lda     a:Process::reg_d,x
         tcd
 
         ; Load P where E matters as 8-bit
-        lda     Process::bit_e,x
-        pha
-
-        ; Store X and Y, all as 16-bit
-        rep     #$20
-        ldy     Process::reg_y,x
-        lda     Process::reg_x,x
-        pha
-
-        ; Store Accumulator as 16-bit
-        lda     Process::reg_c,x
-        pha
-
-        ; Store Data Bank as 8-bit
         sep     #$20
-        lda     Process::reg_db,x
+        lda     a:Process::bit_e,x
+        pha
+
+        ; Load X and Y, all as 16-bit
+        rep     #$20
+        ldy     a:Process::reg_y,x
+        lda     a:Process::reg_x,x
+        pha
+
+        ; Load Accumulator as 16-bit
+        lda     a:Process::reg_c,x
+        pha
+
+        ; Load Data Bank as 8-bit
+        sep     #$20
+        lda     a:Process::reg_db,x
         pha
 
         ; + - - - - - - - - - - +
@@ -170,6 +187,4 @@
         plp
         xce
         ; Bit C in P will always be cleared, but will be restored by RTI
-
-        rti
 .endmacro

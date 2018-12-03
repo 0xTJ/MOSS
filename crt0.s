@@ -5,6 +5,8 @@
 
 .autoimport
 
+.include "functions.inc"
+
 .export STACK_SIZE = 1024
 
 .segment "STACK"
@@ -25,9 +27,20 @@ init:
         lda     #__STACK_LOAD__ + STACK_SIZE - 1
         tcs
 
+        pea     $0D
+        jsr     putchar
+        rep     #$30
+        ply
+        
         ; Initialize system
         jsr     zerobss
         jsr     copydata
+
+        pea     data_string
+        jsr     puts
+        rep     #$30
+        ply
+
         jsr     initlib
 
         pea     init_string
@@ -36,23 +49,18 @@ init:
         ply
 
         ; Run main
-        ; jsr     main
+        jsr     main
 
 exit:
         ; jsr     donelib
 @brkloop:
-        brk
-        brk
+        safe_brk
         bra     @brkloop
 
 .rodata
 
-.export init_string
+data_string:
+        .asciiz "setup data"
+
 init_string:
-        .byte   $0D
-        .asciiz "initialized system"
-
-.data
-
-test:
         .asciiz "initialized system"

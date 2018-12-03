@@ -52,7 +52,7 @@ loop_constructors:
         tax
         
         jsr     (__CONSTRUCTOR_TABLE__,x)
-        rep     #$10
+        rep     #$30
         pla
         ina
         cpa     #__CONSTRUCTOR_COUNT__
@@ -65,13 +65,18 @@ done_constructors:
 .export donelib
 .proc donelib
         rep     #$30
-        ldx     #__DESTRUCTOR_COUNT__
+        lda     #__DESTRUCTOR_COUNT__
         bze     done_destructors
-        ldx     #0
+        lda     #0
 loop_destructors:
-        phx
+        pha
+        
+        asl
+        tax
+        
         jsr     (__DESTRUCTOR_TABLE__,x)
-        plx
+        rep     #$30
+        pla
         inx
         cpx     #__DESTRUCTOR_COUNT__
         bne     loop_destructors

@@ -19,4 +19,4 @@ $(TARGET): $(OBJS)
 
 .PHONY: clean
 clean:
-	del *.map *.lst *.o $(TARGET) 2>NUL
+	del *.map *.lst *.o $(TARGET) $(TARGET).mot 2>NUL

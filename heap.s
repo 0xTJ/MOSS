@@ -10,7 +10,7 @@
 
 .struct HeapTag
         size    .word
-        used    .byte
+        flags   .word
         next    .addr
 .endstruct
 
@@ -26,11 +26,8 @@
         ldx     #__HEAP_LOAD__
         lda     #__HEAP_SIZE__ - .sizeof(HeapTag)
         sta     HeapTag::size,x
-        lda     #0
-        sta     HeapTag::next,x
-        sep     #$20
-        sta     HeapTag::used,x
-        rep     #$20
+        stz     HeapTag::next,x
+        stz     HeapTag::flags,x
         rts
 .endproc
 
@@ -39,7 +36,7 @@
 .export malloc
 .proc malloc
         setup_frame
-
+        
         rep     #$30
         lda     z:3
         ldx     #__HEAP_LOAD__
@@ -48,12 +45,12 @@
 next:
         ldy     HeapTag::next,x
         cpy     #0
-        beq     not_found
+        jeq     not_found
         tyx
 skip_next_inc:
-        ldy     HeapTag::used,x
+        ldy     a:HeapTag::flags,x
         bnz     next
-        cmp     HeapTag::size,x
+        cmp     a:HeapTag::size,x
         bgt     next
         
         ; Prevent fragmentation
@@ -62,19 +59,18 @@ skip_next_inc:
         bgt     skip_resize
         
         ; Resize fragment
-        pha
         txa
         add     #.sizeof(HeapTag)
-        add     1,s
+        add     z:3
         tay
         ; Y contains address of heap tag for new fragment
         
         ; Update sizes
-        lda     HeapTag::size,x ; Size of the fragment to be split
+        lda     a:HeapTag::size,x ; Size of the fragment to be split
         sub     #.sizeof(HeapTag)
-        sub     1,s
+        sub     z:3
         sta     a:HeapTag::size,y ; Size of new fragment
-        pla
+        lda     z:3
         sta     a:HeapTag::size,x
         
         ; Update next pointers
@@ -83,19 +79,21 @@ skip_next_inc:
         tya
         sta     a:HeapTag::next,x
         
-        ; Update new used status
+        ; Update new flags status
         lda     #0
-        sta     a:HeapTag::used,y
+        sta     a:HeapTag::flags,y
         
 skip_resize:
-        sep     #$20
         lda     #1
-        sta     a:HeapTag::used,x
-        rep     #$20
+        sta     a:HeapTag::flags,x
         txa
         add     #.sizeof(HeapTag)
         
-not_found:   ; A should already contain NULL if it was not found
+        ; So that the next part works
+        tay
+        
+not_found:   ; Y will contain NULL if it was not found
+        tya
         restore_frame
         rts
 .endproc
@@ -109,7 +107,7 @@ not_found:   ; A should already contain NULL if it was not found
         lda     z:3
         sub     #.sizeof(HeapTag)
         tax
-        stz     a:HeapTag::used,x
+        stz     a:HeapTag::flags,x
         
         restore_frame
         rts
