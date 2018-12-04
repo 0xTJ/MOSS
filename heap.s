@@ -43,7 +43,7 @@
         jmp     skip_next_inc
 
 next:
-        ldy     HeapTag::next,x
+        ldy     a:HeapTag::next,x
         cpy     #0
         jeq     not_found
         tyx

@@ -15,7 +15,7 @@ PROC_NUM = 8
 .constructor init_processes
 .proc init_processes
         rep     #$30
-        
+
         pea     .sizeof(Process)
         jsr     malloc
         rep     #$30
@@ -55,34 +55,83 @@ commit_scheduling:
 .interruptor sys_tick
 .proc sys_tick
         enter_isr
-        
+
         ; Clear interrupt
         sep     #$20
         lda     #1 << 2
         sta     TIFR
-        
-        ; Enable interrupts
+
+        ; Enable interrupts globally
         cli
-        
+
         ; Increment activity counter
         lda     PD7
         inc
         sta     PD7
-        
+
         jsr     scheduler
 
         exit_isr
         rti
 .endproc
 
-; int create_proc(void)
+; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
+; Assumes Program Bank is $00
+.export setup_proc
+.proc setup_proc
+        setup_frame
+
+        rep     #$30
+        ldx     z:3
+
+        ; Store some registers in struct
+        stz     a:Process::reg_c,x
+        stz     a:Process::reg_d,x
+        stz     a:Process::reg_x,x
+        stz     a:Process::reg_y,x
+        sep     #$20
+        stz     a:Process::reg_db,x
+        stz     a:Process::bit_e,x
+        rep     #$20
+
+        ; Get address to store initial PC
+        ldx     z:5 ; initial_sp
+        dex
+        dex
+        dex
+        dex
+        
+        ; Store flags and program bank
+        sep     #$20
+        stz     a:1,x
+        stz     a:4,x
+        rep     #$20
+
+        ; Store initial PC on process's stack
+        lda     z:7 ; initial_pc
+        sta     a:2,x   ; Store PC on process's stack
+
+        ; Put process's SP in A and struct pointer in X
+        txa
+        ldx     z:3
+        
+        ; Store process's SP in struct
+        sta     a:Process::reg_sp,x
+        
+        restore_frame
+        rts
+.endproc
+
+; struct Process *create_proc(void)
+.export create_proc
 .proc create_proc
-        sep     #$30
+        sep     #$20
         lda     enable_scheduler
         pha
         lda     #0
         sta     enable_scheduler
 
+        rep     #$30
         ldx     #0
 
 next_proc:
@@ -101,15 +150,23 @@ failed:
         lda     #0
         rts
 
-found_empty_proc:
+found_empty_proc:   ; X contains new PID * 2
+        phx
+
         pea     .sizeof(Process)
         jsr     malloc
         rep     #$30
-        ply
+        plx
+
+        ; Put PID * 2 in X
+        plx
 
         ; If malloc fails, exit in a failure state
         cmp     #0
         beq     failed
+
+        ; Push PID * 2
+        phx
 
         ; Put existing next in Y
         rep     #$30
@@ -119,15 +176,13 @@ found_empty_proc:
         ; Put address of new process struct into X
         tax
 
-        ; Get pid from address in table, and store
-        sub     #proc_table
+        ; Get PID from stack and store in new process
+        pla
         lsr
         sta     a:Process::pid,x
-        pla     ; Pop from stack, and discard
 
         ; Mark as not yet running
-        lda     #0
-        sta     a:Process::running,x
+        stz     a:Process::running,x
 
         ; Store existing next in new process
         tya
@@ -139,12 +194,10 @@ found_empty_proc:
         sta     a:Process::next,x
 
         ; Return with new PID in A
-        tax
-        sep     #$20
-        pla
-        sta     enable_scheduler
+        sep     #$10
+        plx
+        stx     enable_scheduler
         rep     #$30
-        lda     a:Process::pid,x
         rts
 .endproc
 
@@ -179,13 +232,15 @@ found_prev:
 .endproc
 
 ; void destroy_proc(int pid)
+.export destroy_proc
 .proc destroy_proc
         setup_frame
-        
+
         sep     #$20
-        pla
+        lda     enable_scheduler
+        pha
+        lda     #0
         sta     enable_scheduler
-        rep     #$30
 
         ; Load PID to destroy
         rep     #$30
@@ -243,7 +298,7 @@ found_prev:
         jsr     free
         rep     #$30
         pla
-        
+
         sep     #$20
         pla
         sta     enable_scheduler

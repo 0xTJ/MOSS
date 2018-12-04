@@ -6,9 +6,12 @@
 .autoimport
 
 .include "functions.inc"
+.include "proc.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
+
+.segment "ENTRY"
 
 .code
 
@@ -27,6 +30,16 @@
         rts
 .endproc
 
+.export proc1
+.proc proc1
+loop:
+        pea     test0_string
+        jsr     puts
+        rep     #$30
+        ply
+        bra     loop
+.endproc
+
 .export main
 .proc main
         rep     #$30
@@ -37,11 +50,11 @@
         jsr     install_user_vector_jsr_abs
         ply
         ply
-        ; pea     sys_call
-        ; pea     COPIRQ
-        ; jsr     install_user_vector_jsr_abs
-        ; ply
-        ; ply
+        pea     sys_call
+        pea     COPIRQ
+        jsr     install_user_vector_jsr_abs
+        ply
+        ply
         
         ; Disable T2
         sep     #$20
@@ -56,9 +69,10 @@
         ora     #1 << 2
         sta     TIER
         ; Load T2 values
-        lda     #.lobyte($4000)
+        T2Freq  = 10
+        lda     #.lobyte((F_CLK / 16) / T2Freq)
         sta     T2CL
-        lda     #.hibyte($4000)
+        lda     #.hibyte((F_CLK / 16) / T2Freq)
         sta     T2CH
         
         ; Show P7 on LEDS
@@ -69,6 +83,30 @@
         ora     #1 << 2
         sta     TER
         
-loop:   safe_brk
+        jsr     create_proc
+        
+        pea     proc1
+        pea     $7fff
+        pha
+        jsr     setup_proc
+        rep     #$30
+        plx
+        ply
+        ply
+        
+        lda     #1
+        sta     a:Process::running,x
+        
+loop:   pea     test1_string
+        jsr     puts
+        rep     #$30
+        ply
         jmp     loop
 .endproc
+
+.rodata
+
+test0_string:
+        .asciiz "test1"
+test1_string:
+        .asciiz "test0"

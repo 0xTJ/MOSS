@@ -6,6 +6,7 @@
         reg_x   .word
         reg_y   .word
         bit_e   .byte
+        
         pid     .word
         running .word
         next    .addr

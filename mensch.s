@@ -1,5 +1,8 @@
 .p816
 
+.export CLK                     = 32768
+.export F_CLK                   = 3686400
+
 .export Alter_Memory            := $00E000
 .export BACKSPACE               := $00E003
                                 ;  $00E006
