@@ -31,11 +31,16 @@ PROC_NUM = 8
         lda     #1
         sta     a:Process::running,x
 
+        stz     disable_scheduler
+
         rts
 .endproc
 
 .proc scheduler
         rep     #$30
+
+        lda     disable_scheduler
+        bnz     done
 
         ldx     current_process_p
 
@@ -49,6 +54,8 @@ loop_scheduling:
 commit_scheduling:
         stx     current_process_p
 
+        lda     z:Process::pid,x
+done:
         rts
 .endproc
 
@@ -100,7 +107,7 @@ commit_scheduling:
         dex
         dex
         dex
-        
+
         ; Store flags and program bank
         sep     #$20
         stz     a:1,x
@@ -114,10 +121,10 @@ commit_scheduling:
         ; Put process's SP in A and struct pointer in X
         txa
         ldx     z:3
-        
+
         ; Store process's SP in struct
         sta     a:Process::reg_sp,x
-        
+
         restore_frame
         rts
 .endproc
@@ -125,13 +132,9 @@ commit_scheduling:
 ; struct Process *create_proc(void)
 .export create_proc
 .proc create_proc
-        sep     #$20
-        lda     enable_scheduler
-        pha
-        lda     #0
-        sta     enable_scheduler
-
         rep     #$30
+        inc     disable_scheduler
+
         ldx     #0
 
 next_proc:
@@ -143,9 +146,7 @@ next_proc:
         blt     next_proc
 
 failed:
-        sep     #$20
-        pla
-        sta     enable_scheduler
+        dec     disable_scheduler
         rep     #$30
         lda     #0
         rts
@@ -164,6 +165,9 @@ found_empty_proc:   ; X contains new PID * 2
         ; If malloc fails, exit in a failure state
         cmp     #0
         beq     failed
+
+        ; Store address in table
+        sta     a:proc_table,x
 
         ; Push PID * 2
         phx
@@ -193,24 +197,18 @@ found_empty_proc:   ; X contains new PID * 2
         ldx     current_process_p
         sta     a:Process::next,x
 
+        dec     disable_scheduler
+        
         ; Return with new PID in A
-        sep     #$10
-        plx
-        stx     enable_scheduler
-        rep     #$30
         rts
 .endproc
 
 .proc find_previous_proc
         setup_frame
-
-        sep     #$20
-        lda     enable_scheduler
-        pha
-        lda     #0
-        sta     enable_scheduler
-
         rep     #$30
+
+        inc     disable_scheduler
+
         ldx     z:3
 
 loop:
@@ -226,6 +224,7 @@ loop:
         jmp     loop
 
 found_prev:
+        dec     disable_scheduler
 
         restore_frame
         rts
@@ -235,15 +234,11 @@ found_prev:
 .export destroy_proc
 .proc destroy_proc
         setup_frame
+        rep     #$30
 
-        sep     #$20
-        lda     enable_scheduler
-        pha
-        lda     #0
-        sta     enable_scheduler
+        inc     disable_scheduler
 
         ; Load PID to destroy
-        rep     #$30
         lda     z:3
 
         ; Get address of process struct into X
@@ -299,10 +294,7 @@ found_prev:
         rep     #$30
         pla
 
-        sep     #$20
-        pla
-        sta     enable_scheduler
-        rep     #$30
+        dec     disable_scheduler
 
         restore_frame
         rts
@@ -318,5 +310,6 @@ current_process_p:
 proc_table:
         .res    2 * PROC_NUM
 
-enable_scheduler:
-        .byte   0
+.export disable_scheduler
+disable_scheduler:
+        .word   0

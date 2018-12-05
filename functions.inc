@@ -4,10 +4,10 @@
         phd
         pea     $0000
         pld
-        
+
         brk
         nop
-        
+
         ; Restore D
         pld
         plp
@@ -24,9 +24,9 @@
 .macro restore_frame preserve_a
         ; Setting preserve_a will obliterate Y instead of A
         ; Defaults to preserving A
-        
+
         rep     #$30
-        
+
 .if .blank(preserve_a)
         tay
 .elseif preserve_a
@@ -56,7 +56,7 @@
         rep     #$30
         phx
         pha
-        
+
         ; Push Data Bank as 8-bit
         phb
 

@@ -7,10 +7,14 @@
 
 .include "functions.inc"
 
+.code
+
 ; int putchar(int c)
 .export putchar
 .proc putchar
         setup_frame
+        
+        inc     disable_scheduler
         
         lda     z:3
         sep     #$20
@@ -24,7 +28,9 @@
         
         ; Restore D
         pld
-
+        
+        dec     disable_scheduler
+        
         restore_frame
         rts
 .endproc
@@ -33,6 +39,8 @@
 .export puts
 .proc puts
         setup_frame
+        
+        inc     disable_scheduler
 
         rep     #$10
         sep     #$20
@@ -50,6 +58,8 @@
         
         ; Restore D
         pld
+        
+        dec     disable_scheduler
 
         restore_frame
         rts

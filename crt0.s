@@ -26,16 +26,16 @@ init:
         ; Load SP with top of stack, requires 2 bytes on stack
         lda     #__STACK_LOAD__ + STACK_SIZE - 1
         tcs
+        
+        ; Initialize system
+        jsr     zerobss
+        jsr     copydata
 
         pea     $0D
         jsr     putchar
         rep     #$30
         ply
         
-        ; Initialize system
-        jsr     zerobss
-        jsr     copydata
-
         pea     data_string
         jsr     puts
         rep     #$30
