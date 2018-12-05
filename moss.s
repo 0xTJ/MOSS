@@ -128,6 +128,8 @@ loop:
         ply
         ply
 
+        jsr     dev_null_init
+        
         lda     #1
         sta     a:Process::running,x
 

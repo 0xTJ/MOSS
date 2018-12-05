@@ -10,6 +10,7 @@
 .code
 
 ; char *strcpy(char *dest, const char *src)
+.export strcpy
 .proc strcpy
         setup_frame
 
