@@ -90,13 +90,13 @@ initrd_dev_dir:
         rep     #$30
         ply
         ply
-        
+
         lda     initrd_dev_dir + FSNode::inode
         plx     ; new Dirent Struct address
         sta     a:DirEnt::inode,x
-        
+
         txa
-        
+
         bra     done
 
 not_0:
@@ -115,9 +115,44 @@ failed:
 .proc fs_initrd_finddir
         setup_frame
 
-        rep     #$20
+        rep     #$30
+
+        lda     z:5 ; name
+        pha
+
+        pea     root_name
+        jsr     strcmp
+        rep     #$30
+        ply
+        cmp     #0
+        bne     try_next_0
+
+        lda     #initrd_root_dir
+        bra     done
+
+try_next_0:
+        pea     dev_name
+        jsr     strcmp
+        rep     #$30
+        ply
+        cmp     #0
+        bne     try_next_1
+
+        lda     #initrd_dev_dir
+        bra     done
+
+try_next_1:
         lda     #0
 
+done:
+        ply     ; pull name
         restore_frame
         rts
 .endproc
+
+.rodata
+
+root_name:
+        .byte 0
+dev_name:
+        .byte 'd', 'e', 'v', 0

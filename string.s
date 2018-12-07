@@ -70,22 +70,32 @@ done:
 .proc strcmp
         setup_frame
 
-        rep     #$30
-        ldx     #0
+        rep     #$10
+        sep     #$20
+        ldy     #0
 
 loop:        
-        lda     z:3,x
-        sub     z:5,x
+        lda     (3),y
+        sub     (5),y
+        bnz     sign_extend
         
-        bne     done
+        lda     (3),y
+        bze     sign_extend
         
-        ldy     z:3,x
-        bze     done
-        
-        inx
+        iny
         
         bra     loop
         
+sign_extend:
+        ; Sign-extend A
+        rep     #$30
+        bit     #$80    ; Negative bit
+        bze     clear_upper_byte
+set_upper_byte:
+        ora     #$FF00
+        bra     done
+clear_upper_byte:
+        and     #$00FF
 done:
         restore_frame
         rts

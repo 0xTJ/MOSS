@@ -108,7 +108,7 @@ done_loop:
         lda     z:5
         inc
         sta     a:DirEnt::inode,x
-        
+
         txa
 
 done:

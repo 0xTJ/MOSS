@@ -16,7 +16,7 @@ null_driver:
 .rodata
 
 null_name:
-        .asciiz "null"
+        .byte 'n', 'u', 'l', 'l', 0
 
 .code
 

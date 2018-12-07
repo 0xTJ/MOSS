@@ -11,6 +11,10 @@
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
 
+.import F_CLK: far
+
+.code
+
 ; void install_user_vector(void * far user_vector_loc, void (*vector_isr)(void) far) far
 .proc install_user_vector_jsr_abs
         rep     #$30
@@ -114,8 +118,8 @@ loop:
         ply
         ply
 
-        ; lda     #1
-        ; sta     a:Process::running,x
+        lda     #1
+        sta     a:Process::running,x
 
         jsr     create_proc
 
@@ -128,11 +132,11 @@ loop:
         ply
         ply
         
-        ; lda     #1
-        ; sta     a:Process::running,x
+        lda     #1
+        sta     a:Process::running,x
 
         pea     0
-        pea     initrd_root_dir
+        pea     dev_root_dir
         jsr     readdir_fs
         rep     #$30
         ply
@@ -143,6 +147,13 @@ loop:
         rep     #$30
         ply
         
+        pea     path
+        pea     root_dir
+        jsr     traverse_rel_path
+        rep     #$30
+        ply
+        ply
+        
 loop:   
         safe_brk
         bra     loop
@@ -150,6 +161,8 @@ loop:
 
 .rodata
 
+path:
+        .byte '/', 0
 test0_string:
         .asciiz "test0"
 test1_string:
