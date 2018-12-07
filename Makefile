@@ -12,7 +12,7 @@ OBJS = $(AS_SRC:.s=.o)
 all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET)
-	bin2mot -O0x6000 -L0x800 -2 -H $<
+	bin2mot -O0x6000 -L0x900 -2 -H $<
 
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@

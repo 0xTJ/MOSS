@@ -114,8 +114,8 @@ loop:
         ply
         ply
 
-        lda     #1
-        sta     a:Process::running,x
+        ; lda     #1
+        ; sta     a:Process::running,x
 
         jsr     create_proc
 
@@ -127,12 +127,22 @@ loop:
         plx
         ply
         ply
-
-        jsr     dev_null_init
         
-        lda     #1
-        sta     a:Process::running,x
+        ; lda     #1
+        ; sta     a:Process::running,x
 
+        pea     0
+        pea     initrd_root_dir
+        jsr     readdir_fs
+        rep     #$30
+        ply
+        ply
+        
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
 loop:   
         safe_brk
         bra     loop

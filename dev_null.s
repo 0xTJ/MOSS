@@ -20,7 +20,7 @@ null_name:
 
 .code
 
-.export dev_null_init
+.constructor dev_null_init
 .proc dev_null_init
         rep     #$30
 
@@ -42,7 +42,6 @@ null_name:
 .endproc
 
 ; ssize_t dev_null_write(const void *buf, size_t nbytes, off_t offset)
-.export dev_null_write
 .proc dev_null_write
         setup_frame
         rep     #$30

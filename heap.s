@@ -20,7 +20,7 @@
 .code
 
 
-.constructor heap_init
+.constructor heap_init, 1
 .proc heap_init
         rep     #$30 
         ldx     #__HEAP_LOAD__
