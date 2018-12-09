@@ -74,18 +74,18 @@ done:
         sep     #$20
         ldy     #0
 
-loop:        
+loop:
         lda     (3),y
         sub     (5),y
         bnz     sign_extend
-        
+
         lda     (3),y
         bze     sign_extend
-        
+
         iny
-        
+
         bra     loop
-        
+
 sign_extend:
         ; Sign-extend A
         rep     #$30
@@ -97,6 +97,43 @@ set_upper_byte:
 clear_upper_byte:
         and     #$00FF
 done:
+        restore_frame
+        rts
+.endproc
+
+; int memset (void *ptr, int value, size_t num)
+.export memset
+.proc memset
+        setup_frame
+        rep     #$30
+
+        ldx     z:7 ; num
+        bze     done
+
+        lda     z:5 ; value
+        
+        ; Manually store once, will be used as source for copy
+        sep     #$20
+        sta     (3) ; *ptr
+        dex     ; num - 1
+        bze     done
+        rep     #$30
+
+        txa     ; num - 1
+        dec     ; num - 2
+        ldx     z:3 ; ptr
+        txy     ; ptr
+        iny     ; ptr + 1
+
+        ; Run mvn with:
+        ; A: num - 2
+        ; X: ptr (source of MVN)
+        ; Y: ptr + 1 (destination of MVN)
+        ; Src and dst banks 0
+        mvn     0, 0
+
+done:
+        rep    #$30
         restore_frame
         rts
 .endproc

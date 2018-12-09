@@ -10,6 +10,20 @@
 
 PROC_NUM = 8
 
+.bss
+
+.export current_process_p
+current_process_p:
+        .addr   0
+
+.export proc_table
+proc_table:
+        .res    2 * PROC_NUM
+
+.export disable_scheduler
+disable_scheduler:
+        .word   0
+
 .code
 
 .constructor init_processes
@@ -31,6 +45,17 @@ PROC_NUM = 8
         lda     #1
         sta     a:Process::running,x
 
+        pea     .sizeof(Process::files_p)
+        pea     0
+        lda     current_process_p
+        add     #Process::files_p
+        pha
+        jsr     memset
+        rep     #$30
+        ply
+        ply
+        ply
+        
         stz     disable_scheduler
 
         rts
@@ -299,17 +324,3 @@ found_prev:
         restore_frame
         rts
 .endproc
-
-.bss
-
-.export current_process_p
-current_process_p:
-        .addr   0
-
-.export proc_table
-proc_table:
-        .res    2 * PROC_NUM
-
-.export disable_scheduler
-disable_scheduler:
-        .word   0

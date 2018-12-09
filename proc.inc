@@ -1,3 +1,5 @@
+PROC_MAX_FILES = 4
+
 .struct Process
         reg_c   .word
         reg_db  .byte
@@ -10,4 +12,6 @@
         pid     .word
         running .word
         next    .addr
+        
+        files_p .addr 4
 .endstruct

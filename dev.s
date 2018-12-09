@@ -40,6 +40,39 @@ dev_root_dir:
 
 .code
 
+; struct Device *dev_from_name(char *name)
+.proc dev_from_name
+        setup_frame
+        rep     #$30
+
+        ; Push name to compare
+        lda     z:3 ; name
+        pha
+        
+        ; Load devices pointer to X
+        ldx     devices_list
+        
+loop:
+        ; CHeck if NULL
+        cpx     #0
+        beq     done
+        
+        lda     a:Device::name
+        pha
+        jsr     strcmp
+        rep     #$30
+        ply
+        
+        ; Check if strcmp returned 0, and don't loop if it did
+        cmp     #0
+        bne     loop
+
+done:
+        txa
+        restore_frame
+        rts
+.endproc
+
 ; struct DirEnt *fs_dev_readdir(struct FSNode *node, unsigned int index)
 .export fs_dev_readdir
 .proc fs_dev_readdir

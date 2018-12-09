@@ -118,8 +118,8 @@ loop:
         ply
         ply
 
-        lda     #1
-        sta     a:Process::running,x
+        ; lda     #1
+        ; sta     a:Process::running,x
 
         jsr     create_proc
 
@@ -131,9 +131,9 @@ loop:
         plx
         ply
         ply
-        
-        lda     #1
-        sta     a:Process::running,x
+
+        ; lda     #1
+        ; sta     a:Process::running,x
 
         pea     0
         pea     dev_root_dir
@@ -141,20 +141,27 @@ loop:
         rep     #$30
         ply
         ply
-        
+
         pha
         jsr     puts
         rep     #$30
         ply
-        
+
         pea     path
-        pea     root_dir
-        jsr     traverse_rel_path
+        lda     #3
+        cop     0
+        lda     #3
+        cop     0
+        lda     #3
+        cop     0
+        lda     #3
+        cop     0
+        lda     #3
+        cop     0
         rep     #$30
         ply
-        ply
-        
-loop:   
+
+loop:
         safe_brk
         bra     loop
 .endproc

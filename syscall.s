@@ -2,6 +2,7 @@
 .smart
 
 .macpack generic
+.macpack longbranch
 
 .autoimport
 
@@ -19,33 +20,35 @@ syscall_count .set 1
 syscall_count .set syscall_count + 1
 .endmacro
 
+.export sysargn
 sysargn:
 syscall none, 0
 syscall get_pid, 0
-syscall putc_serial, 1
+syscall open, 6
 
 ; Syscall number must be loaded into A
 .interruptor sys_call
 .proc sys_call
         clc
         xce
-        bcs     emul_mode
+        jcs     emul_mode
+
+        rep     #$30
 
         and     #$00FF  ; Only lower 8 bits matter
-        
+
         ; Check syscall bounds
         bze     invalid_syscall
-        cmp     __SYSCALL_COUNT__
+        cmp     #__SYSCALL_COUNT__
         bgt     invalid_syscall
-        
-        sep     #$20
-        pha     ; Push the Syscall #
-        rep     #$30
+
+        ; Push the Syscall #
+        pha
 
         ; Load D with the address below the Syscall #
         tsc
         tcd
-        
+
         ; Stack:
         ; | Arguments           |
         ; +---------------------+
@@ -57,51 +60,64 @@ syscall putc_serial, 1
         ; +---------------------+  |
         ; | Status Register     | /
         ; +---------------------+
-        ; | Syscall #           |
+        ; |                     |
+        ; + Syscall #           +
+        ; |                     |
         ; +---------------------+
-        
+
+        lda     1,s
         tax
-        lda     sysargn,x
+        dex
+        sep     #$20
+        lda     a:sysargn,x
+        rep     #$20
         bze     no_syscall_args
         pha
-        
+
         tsc
         inc
+        inc
         tay         ; Address right below the Syscall # in stack
-        
-        add     #5  ; Address of the K Register in stack
+
+        add     #6  ; Address of the K Register in stack
         add     1,s ; Add the number of arguments
         tax         ; Address of the deepest byte in the stack
-        
+
         pla         ; Stack is again as shown above, and # of arguments is in A
         dec
         
         mvp     0,0
-        
+
         ; Y will contain the new SP, below the arguments
         tya
         tcs
 
 no_syscall_args:
-        lda     z:3 ; Load Syscall # into A
+        lda     z:1 ; Load Syscall # into A
 
 syscall_call:
-        ; Multiply Syscall # by 2
+        ; Multiply Syscall # - 1 by 2
+        dec
         asl
         tax
 
+        ; Re-enable interrupts
+        cli
+        
         jsr     (__SYSCALL_TABLE__,x)
         ; Return value in A
         
+        rep     #$30
+
         ; Restore SP and remove Syscall # from stack
         tax
         tdc
         tcs
         pla
         txa
-        
+
         rti
-        
+
 invalid_syscall:
         ;jsr     core_dump
         rti
@@ -125,8 +141,6 @@ emul_mode:  ; Syscalls in emulation mode not supported
         rts
 .endproc
 
-.proc sc_putc_serial
-        setup_frame
-        jsl     SEND_BYTE_TO_PC
-        restore_frame
+.proc sc_open
+        jmp     open
 .endproc
