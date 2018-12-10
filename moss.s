@@ -7,6 +7,7 @@
 
 .include "functions.inc"
 .include "proc.inc"
+.include "fcntl.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
@@ -30,33 +31,62 @@
         rts
 .endproc
 
-.proc proc1
-loop:
-        jsr     delay
-        pea     test0_string
-        jsr     puts
+.proc proc1_init
+        ; Open stdin 
+        pea     O_RDONLY
+        pea     dev_ttyS0_path
+        cop     3
         rep     #$30
         ply
-        bra     loop
-.endproc
+        ply
 
-.proc proc2
-loop:
-        jsr     delay
-        pea     test1_string
-        jsr     puts
+        ; Open stdout
+        pea     O_WRONLY
+        pea     dev_ttyS0_path
+        cop     3
         rep     #$30
         ply
-        bra     loop
+        ply
+
+        ; Open stderr
+        pea     O_WRONLY
+        pea     dev_ttyS0_path
+        cop     3
+        rep     #$30
+        ply
+        ply
+
+loop:   bra     loop
 .endproc
 
-.proc delay
-        rep     #$30
-        lda     #$FFFF
-loop:
-        dec
-        bnz     loop
+.proc setup_system_timer
+        ; Disable T2
+        sep     #$20
+        lda     TER
+        and     #.lobyte(~(1 << 2))
+        sta     TER
+        
+        ; Clear pending T2 interrupt
+        lda     #1 << 2
+        sta     TIFR
+        
+        ; Enable T2 interrupt
+        lda     TIER
+        ora     #1 << 2
+        sta     TIER
+        
+        ; Load T2 values
+        T2Freq  = 10
+        lda     #.lobyte((F_CLK / 16) / T2Freq)
+        sta     T2CL
+        lda     #.hibyte((F_CLK / 16) / T2Freq)
+        sta     T2CH
 
+        ; Enable T2
+        lda     TER
+        ora     #1 << 2
+        sta     TER
+        
         rts
 .endproc
 
@@ -79,37 +109,16 @@ loop:
         rep     #$30
         ply
         ply
-
-        ; Disable T2
-        sep     #$20
-        lda     TER
-        and     #.lobyte(~(1 << 2))
-        sta     TER
-        ; Clear pending T2 interrupt
-        lda     #1 << 2
-        sta     TIFR
-        ; Enable T2 interrupt
-        lda     TIER
-        ora     #1 << 2
-        sta     TIER
-        ; Load T2 values
-        T2Freq  = 10
-        lda     #.lobyte((F_CLK / 16) / T2Freq)
-        sta     T2CL
-        lda     #.hibyte((F_CLK / 16) / T2Freq)
-        sta     T2CH
-
-        ; Show P7 on LEDS
+        
+        ; Show PD7 on LEDS
         stz     PCS7
 
-        ; Enable T2
-        lda     TER
-        ora     #1 << 2
-        sta     TER
+        ; Setup T2 for system tick timer
+        jsr     setup_system_timer
 
+        ; Create process with PID 1, and run
         jsr     create_proc
-
-        pea     proc1
+        pea     proc1_init
         pea     $7fff
         pha
         jsr     setup_proc
@@ -117,50 +126,9 @@ loop:
         plx
         ply
         ply
-
-        ; lda     #1
-        ; sta     a:Process::running,x
-
-        jsr     create_proc
-
-        pea     proc2
-        pea     $77ff
-        pha
-        jsr     setup_proc
-        rep     #$30
-        plx
-        ply
-        ply
-
-        ; lda     #1
-        ; sta     a:Process::running,x
-
-        pea     0
-        pea     dev_root_dir
-        jsr     readdir_fs
-        rep     #$30
-        ply
-        ply
-
-        pha
-        jsr     puts
-        rep     #$30
-        ply
-
-        pea     path
-        lda     #3
-        cop     0
-        lda     #3
-        cop     0
-        lda     #3
-        cop     0
-        lda     #3
-        cop     0
-        lda     #3
-        cop     0
-        rep     #$30
-        ply
-
+        lda     #1
+        sta     a:Process::running,x
+        
 loop:
         safe_brk
         bra     loop
@@ -168,8 +136,10 @@ loop:
 
 .rodata
 
-path:
-        .byte '/', 0
+dev_null_path:
+        .asciiz "/dev/null"
+dev_ttyS0_path:
+        .asciiz "/dev/ttyS0"
 test0_string:
         .asciiz "test0"
 test1_string:

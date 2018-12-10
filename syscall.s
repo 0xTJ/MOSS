@@ -35,7 +35,28 @@ syscall open, 6
 
         rep     #$30
 
-        and     #$00FF  ; Only lower 8 bits matter
+        ; Stack:
+        ; | Arguments           |
+        ; +---------------------+
+        ; | K Register          | \
+        ; +---------------------+  |
+        ; |                     |  |
+        ; + Program Counter     +  |- Pushed by interrupt
+        ; |                     |  |
+        ; +---------------------+  |
+        ; | Status Register     | /
+        ; +---------------------+
+        
+        ; Load address of COP signature to X
+        lda     2,s
+        tax
+        dex
+        
+        ; Load COP signature to A
+        sep     #$20
+        lda     a:0,x
+        rep     #$20
+        and     #$00FF
 
         ; Check syscall bounds
         bze     invalid_syscall
@@ -135,6 +156,7 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_get_pid
         rep     #$30
+        
         ldx     current_process_p
         lda     Process::pid,x
 
