@@ -17,6 +17,7 @@ FS_TYPE_BITS    = $0F
         close   .addr
         readdir .addr
         finddir .addr
+        impl    .word
         ptr     .addr
 .endstruct
 

@@ -20,11 +20,14 @@ ttyS0_name:
 
 .code
 
-; .constructor dev_ttyS0_init
+.constructor dev_ttyS0_init
 .proc dev_ttyS0_init
         rep     #$30
 
         ldx     #ttyS0_driver
+
+        lda     #dev_ttyS0_read
+        sta     a:CharDriver::read,x
 
         lda     #dev_ttyS0_write
         sta     a:CharDriver::write,x

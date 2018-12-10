@@ -20,7 +20,7 @@
         jsr     traverse_abs_path
         rep     #$30
         ply
-
+        
         cmp     #0
         beq     failed
 
@@ -31,7 +31,7 @@
         lda     current_process_p
         add     #Process::files_p
         tax
-
+        
         ; Find the location in table of free file, location in X, file # in Y
         ldy     #0
 table_loop:

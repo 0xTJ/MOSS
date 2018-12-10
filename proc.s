@@ -213,6 +213,26 @@ found_empty_proc:   ; X contains new PID * 2
         ; Mark as not yet running
         stz     a:Process::running,x
 
+        ; Store X and Y
+        phx
+        phy
+        
+        ; Zero file descriptor pointer table
+        pea     .sizeof(Process::files_p)
+        pea     0
+        txa
+        add     #Process::files_p
+        pha
+        jsr     memset    ; TODO: fix
+        rep     #$30
+        pla
+        pla
+        pla
+
+        ; Restore X and Y
+        ply
+        plx
+        
         ; Store existing next in new process
         tya
         sta     a:Process::next,x

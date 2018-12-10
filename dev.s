@@ -14,6 +14,7 @@
         type    .word
         driver  .addr
         name    .addr
+        fsnode  .tag    FSNode
         next    .addr
 .endstruct
 
@@ -22,6 +23,9 @@
 .export devices_list
 devices_list:
         .addr   0
+
+last_dev_inode:
+        .word   0
 
 .data
 
@@ -36,6 +40,7 @@ dev_root_dir:
         .addr   0               ; close
         .addr   fs_dev_readdir  ; readdir
         .addr   fs_dev_finddir  ; finddir
+        .word   0               ; impl
         .addr   0               ; ptr
 
 .code
@@ -48,27 +53,118 @@ dev_root_dir:
         ; Push name to compare
         lda     z:3 ; name
         pha
-        
+
         ; Load devices pointer to X
         ldx     devices_list
-        
+
 loop:
-        ; CHeck if NULL
+        ; Check if NULL
         cpx     #0
         beq     done
-        
+
         lda     a:Device::name
         pha
         jsr     strcmp
         rep     #$30
         ply
-        
+
         ; Check if strcmp returned 0, and don't loop if it did
         cmp     #0
         bne     loop
 
 done:
         txa
+        restore_frame
+        rts
+.endproc
+
+; unsigned int fs_dev_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+.export fs_dev_read
+.proc fs_dev_read
+        setup_frame
+        rep     #$30
+
+        ldx     z:3 ; node
+
+        ; Load struct Device * to X
+        lda     a:FSNode::impl,x
+        bze     failed
+        tax
+
+        ldy     z:5 ; offset
+        phy
+        ldy     z:7 ; size
+        phy
+        ldy     z:9 ; buffer
+        phy
+        
+        lda     a:Device::type,x
+        
+        cmp     #DEV_TYPE_CHAR
+        beq     chardevice
+        bra     failed
+        
+chardevice:
+        ; Load char driver to X
+        lda     a:Device::driver,x
+        tax
+        
+        ; Push char driver pointer and call read
+        phx
+        jsr     (CharDriver::read,x)
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
+failed:
+
+        restore_frame
+        rts
+.endproc
+
+; unsigned int fs_dev_write(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+.export fs_dev_write
+.proc fs_dev_write
+        rep     #$30
+
+        ldx     z:3 ; node
+
+        ; Load struct Device * to X
+        lda     a:FSNode::impl,x
+        bze     failed
+        tax
+
+        ldy     z:5 ; offset
+        phy
+        ldy     z:7 ; size
+        phy
+        ldy     z:9 ; buffer
+        phy
+        
+        lda     a:Device::type,x
+        
+        cmp     #DEV_TYPE_CHAR
+        beq     chardevice
+        bra     failed
+        
+chardevice:
+        ; Load char driver to X
+        lda     a:Device::driver,x
+        tax
+        
+        ; Push char driver pointer and call write
+        phx
+        jsr     (CharDriver::write,x)
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
+failed:
+
         restore_frame
         rts
 .endproc
@@ -209,6 +305,35 @@ failed:
         ; Reset next device
         stz     a:Device::next,x
 
+        ; Generate inode #
+
+        ; Load FSNode
+        lda     z:7
+        cmp     #DEV_TYPE_CHAR
+        beq     chardevice
+        bra     failed_device_type
+
+chardevice:
+        lda     #FS_CHARDEVICE
+        sta     a:Device::fsnode + FSNode::flags,x
+        inc     last_dev_inode
+        lda     last_dev_inode
+        sta     a:Device::fsnode + FSNode::inode,x
+        lda     #fs_dev_read
+        sta     a:Device::fsnode + FSNode::read,x
+        lda     #fs_dev_write
+        sta     a:Device::fsnode + FSNode::write,x
+        stz     a:Device::fsnode + FSNode::open,x
+        stz     a:Device::fsnode + FSNode::close,x
+        stz     a:Device::fsnode + FSNode::readdir,x
+        stz     a:Device::fsnode + FSNode::finddir,x
+        txa
+        sta     a:Device::fsnode + FSNode::impl,x
+        stz     a:Device::fsnode + FSNode::ptr,x
+        bra     done_type_spec
+
+done_type_spec:
+
         ; Add to list
         txa                     ; Move struct address to A
         ldy     devices_list    ; Will jump if the list pointer is not NULL
@@ -220,6 +345,14 @@ find_loop:
         ldy     a:Device::next,x
         bnz     find_loop
         sta     a:Device::next,x
+
+        bra     done
+
+failed_device_type:
+        phx
+        jsr     free
+        rep     #$30
+        ply
 
 failed_driver_alloc:
 

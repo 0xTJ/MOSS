@@ -22,6 +22,7 @@ initrd_root_dir:
         .addr   0                   ; close
         .addr   fs_initrd_readdir   ; readdir
         .addr   fs_initrd_finddir   ; finddir
+        .word   0                   ; impl
         .addr   0                   ; ptr
 
 .export initrd_dev_dir
@@ -35,6 +36,7 @@ initrd_dev_dir:
         .addr   0                   ; close
         .addr   fs_initrd_readdir   ; readdir
         .addr   fs_initrd_finddir   ; finddir
+        .word   0                   ; impl
         .addr   0                   ; ptr
 
 .code
@@ -58,7 +60,7 @@ initrd_dev_dir:
 .proc fs_initrd_readdir
         setup_frame
         rep     #$30
-
+        
         lda     z:3     ; node
         cmp     #initrd_root_dir
         jne     failed
@@ -66,8 +68,6 @@ initrd_dev_dir:
         lda     z:5     ; index
         cmp     #0
         jne     not_0
-
-        ; Is rev
 
         ; Allocate memory for DirEnt
         pea     .sizeof(DirEnt)

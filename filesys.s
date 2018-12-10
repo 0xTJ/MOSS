@@ -22,6 +22,7 @@ root_dir:
         .addr   0               ; close
         .addr   0               ; readdir
         .addr   0               ; finddir
+        .word   0               ; impl
         .addr   0               ; ptr
 
 .code
