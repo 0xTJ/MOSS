@@ -55,7 +55,7 @@ disable_scheduler:
         ply
         ply
         ply
-        
+
         stz     disable_scheduler
 
         rts
@@ -167,7 +167,7 @@ next_proc:
         bze     found_empty_proc
         inx
         inx
-        cpx     PROC_NUM * 2
+        cpx     #PROC_NUM * 2
         blt     next_proc
 
 failed:
@@ -223,7 +223,7 @@ found_empty_proc:   ; X contains new PID * 2
         sta     a:Process::next,x
 
         dec     disable_scheduler
-        
+
         ; Return with new PID in A
         rts
 .endproc
