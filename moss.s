@@ -70,7 +70,7 @@
         rep     #$30
         ply
         ply
-        
+
         ; Setup stdout
         pea     O_WRONLY
         pea     dev_ttyS0_path
@@ -78,7 +78,7 @@
         rep     #$30
         ply
         ply
-        
+
         ; Setup stderr
         pea     O_WRONLY
         pea     dev_ttyS0_path
@@ -117,7 +117,7 @@ loop:
 
         ; Setup system tick timer
         jsr     setup_systick_timer
-        
+
         ; Start running process 1
         jsr     create_proc
         pea     proc1

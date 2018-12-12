@@ -56,13 +56,19 @@ dev_root_dir:
 
         ; Load devices pointer to X
         ldx     devices_list
+        
+        bra     skip_first_loop
 
 loop:
+        ldy     a:Device::next,x
+        tyx
+        
+skip_first_loop:
         ; Check if NULL
         cpx     #0
         beq     done
 
-        lda     a:Device::name
+        lda     a:Device::name,x
         pha
         jsr     strcmp
         rep     #$30
@@ -97,18 +103,18 @@ done:
         phy
         ldy     z:9 ; buffer
         phy
-        
+
         lda     a:Device::type,x
-        
+
         cmp     #DEV_TYPE_CHAR
         beq     chardevice
         bra     failed
-        
+
 chardevice:
         ; Load char driver to X
         lda     a:Device::driver,x
         tax
-        
+
         ; Push char driver pointer and call read
         phx
         jsr     (CharDriver::read,x)
@@ -142,18 +148,18 @@ failed:
         phy
         ldy     z:9 ; buffer
         phy
-        
+
         lda     a:Device::type,x
-        
+
         cmp     #DEV_TYPE_CHAR
         beq     chardevice
         bra     failed
-        
+
 chardevice:
         ; Load char driver to X
         lda     a:Device::driver,x
         tax
-        
+
         ; Push char driver pointer and call write
         phx
         jsr     (CharDriver::write,x)
@@ -255,8 +261,18 @@ failed:
         setup_frame
         rep     #$30
 
+        lda     z:5 ; name
+        pha
+        jsr     dev_from_name
+        rep     #$30
+        ply
+        
+        cmp     #0
+        beq     done
 
+        add     #Device::fsnode
 
+done:
         restore_frame
         rts
 .endproc
@@ -314,6 +330,18 @@ failed:
         bra     failed_device_type
 
 chardevice:
+        phx     ; Save X
+        lda     a:Device::name,x
+        pha     ; Push address of source string
+        txa
+        add     a:Device::fsnode + FSNode::name
+        pha     ; Push address of FSNode string
+        jsr     strcpy
+        rep     #$30
+        ply
+        ply
+        plx     ; Restore X
+
         lda     #FS_CHARDEVICE
         sta     a:Device::fsnode + FSNode::flags,x
         inc     last_dev_inode

@@ -57,12 +57,17 @@ skip_first:
 .export traverse_rel_path
 .proc traverse_rel_path
         setup_frame
-
         rep     #$30
 
-        ; TODO: Make sure that node is a directory. If it is a mount, follow it.
-        lda     z:3
+        ; Check for path being empty and jump to empty_path if it is.
+        lda     z:5
+        tax
+        sep     #$20
+        lda     a:0,x
+        jeq     empty_path
+        rep     #$20
 
+        lda     z:3
         pha
         jsr     follow_mounts
         rep     #$30
@@ -74,14 +79,6 @@ skip_first:
         cmp     #FS_DIRECTORY
         jne     failed
         tya
-
-        ; Check for path being empty and jump to empty_path if it is.
-        lda     z:5
-        tax
-        sep     #$20
-        lda     a:0,x
-        jeq     empty_path
-        rep     #$20
 
         ; Make space for string on stack
         tsc
@@ -146,7 +143,7 @@ done_segment:
         rep     #$30
         ply
         ply
-
+        
         cmp     #0
         beq     failed
 
