@@ -1,5 +1,5 @@
 AS = cl65
-ASFLAGS = --cpu 65816 -c -l $(<:.s=.lst) -g --create-dep $(<:.s=.d)
+ASFLAGS = --cpu 65816 -c -l $(<:.s=.lst) -g --create-dep $(<:.s=.d) -DKERNEL
 CC = cl65
 CFLAGS = --cpu 65816 -l $(<:.c=.lst) --create-dep $(<:.c=.d)
 LDFLAGS = --cpu 65816 -C mensch.cfg -m $(@).map --no-target-lib -vm

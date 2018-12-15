@@ -101,34 +101,62 @@ done:
         rts
 .endproc
 
-; int memset (void *ptr, int value, size_t num)
+; void *memset(void *s, int c, size_t n)
 .export memset
 .proc memset
         setup_frame
         rep     #$30
 
-        ldx     z:7 ; num
+        ldx     z:7 ; n
         bze     done
 
-        lda     z:5 ; value
-        
+        lda     z:5 ; c
+
         ; Manually store once, will be used as source for copy
         sep     #$20
-        sta     (3) ; *ptr
-        dex     ; num - 1
+        sta     (3) ; *s
+        dex     ; n - 1
         bze     done
         rep     #$30
 
-        txa     ; num - 1
-        dec     ; num - 2
-        ldx     z:3 ; ptr
-        txy     ; ptr
-        iny     ; ptr + 1
+        txa     ; n - 1
+        dec     ; n - 2
+        ldx     z:3 ; s
+        txy     ; s
+        iny     ; s + 1
 
         ; Run mvn with:
-        ; A: num - 2
-        ; X: ptr (source of MVN)
-        ; Y: ptr + 1 (destination of MVN)
+        ; A: n - 2
+        ; X: s (source of MVN)
+        ; Y: s + 1 (destination of MVN)
+        ; Src and dst banks 0
+        mvn     0, 0
+
+done:
+        rep    #$30
+        restore_frame
+        rts
+.endproc
+
+; void *memcpy(void *dest, const void *src, size_t n)
+.export memcpy
+.proc memcpy
+        setup_frame
+        rep     #$30
+
+        ; Put n - 1 into A, or done if n == 0
+        lda     z:7 ; n
+        bze     done
+        dec
+        
+        ; Load dest and src to Y and X
+        ldy     z:3 ; dest
+        ldx     z:5 ; src
+
+        ; Run mvn with:
+        ; A: n - 1
+        ; X: src
+        ; Y: dest
         ; Src and dst banks 0
         mvn     0, 0
 

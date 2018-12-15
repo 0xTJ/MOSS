@@ -31,22 +31,7 @@ init:
         jsr     zerobss
         jsr     copydata
 
-        pea     $0D
-        jsr     putchar
-        rep     #$30
-        ply
-        
-        pea     data_string
-        jsr     puts
-        rep     #$30
-        ply
-
         jsr     initlib
-
-        pea     init_string
-        jsr     puts
-        rep     #$30
-        ply
 
         ; Run main
         jsr     main
@@ -58,9 +43,3 @@ exit:
         bra     @brkloop
 
 .rodata
-
-data_string:
-        .asciiz "setup data"
-
-init_string:
-        .asciiz "initialized system"

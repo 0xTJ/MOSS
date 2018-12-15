@@ -109,6 +109,81 @@ done:
         rti
 .endproc
 
+; struct Process *clone_current_proc()
+; Properly setting SP must be managed by calling function.
+; Set to not running.
+.export clone_current_proc
+.proc clone_current_proc
+        rep     #$30
+
+        ; Disable interrupts to safely modify current process
+        sei
+
+        ; Lock scheduler mutex for clarity
+        inc     disable_scheduler
+
+        ; Get new process handle
+        jsr     create_proc
+
+        ; Check for failure
+        cmp     #0
+        beq     failed
+
+        tax
+        
+        ; Save PID and next for later
+        ldy     a:Process::pid,x
+        phy
+        ldy     a:Process::next,x
+        phy
+
+        ; Save process struct for later
+        phx
+        
+        ; Load current process struct
+        ldx     current_process_p
+        
+        ; Copy process info
+        pea     .sizeof(Process)
+        phx
+        pha
+        jsr     memcpy
+        rep     #$30
+        ply
+        ply
+        ply
+        
+        ; Restore new process struct
+        plx
+        
+        ; Restore PID and next
+        pla
+        sta     a:Process::next,x
+        pla
+        sta     a:Process::pid,x
+
+        ; Reset SP
+        stz     a:Process::reg_sp,x
+
+        ; Set to not running
+        stz     a:Process::running,x
+        
+        txa
+
+done:
+        ; Unlock scheduler mutex
+        dec     disable_scheduler
+
+        ; Enable interrupts
+        cli
+
+        rts
+
+failed:
+        lda     #0
+        bra     done
+.endproc
+
 ; void setup_proc(void *initial_sp, void *initial_pc)
 .export replace_current_proc
 .proc replace_current_proc
@@ -182,16 +257,6 @@ loop:
         inc     disable_scheduler
 
         ldx     z:3
-
-        ; Store some registers in struct
-        stz     a:Process::reg_c,x
-        stz     a:Process::reg_d,x
-        stz     a:Process::reg_x,x
-        stz     a:Process::reg_y,x
-        sep     #$20
-        stz     a:Process::reg_db,x
-        stz     a:Process::bit_e,x
-        rep     #$20
 
         ; Get address to store initial PC
         ldx     z:5 ; initial_sp
@@ -286,6 +351,16 @@ found_empty_proc:   ; X contains new PID * 2
 
         ; Mark as not yet running
         stz     a:Process::running,x
+
+        ; Reset registers in struct
+        stz     a:Process::reg_c,x
+        stz     a:Process::reg_d,x
+        stz     a:Process::reg_x,x
+        stz     a:Process::reg_y,x
+        sep     #$20
+        stz     a:Process::reg_db,x
+        stz     a:Process::bit_e,x
+        rep     #$20
 
         ; Store X and Y
         phx

@@ -48,7 +48,7 @@
         sta     TIER
 
         ; Load T2 values
-        T2Freq  = 10
+        T2Freq  = 100
         lda     #.lobyte((F_CLK / 16) / T2Freq)
         sta     T2CL
         lda     #.hibyte((F_CLK / 16) / T2Freq)
@@ -60,50 +60,6 @@
         sta     TER
 
         rts
-.endproc
-
-.proc proc1
-        ; Setup stdin
-        pea     O_RDONLY
-        pea     dev_ttyS0_path
-        cop     3
-        rep     #$30
-        ply
-        ply
-
-        ; Setup stdout
-        pea     O_WRONLY
-        pea     dev_ttyS0_path
-        cop     3
-        rep     #$30
-        ply
-        ply
-
-        ; Setup stderr
-        pea     O_WRONLY
-        pea     dev_ttyS0_path
-        cop     3
-        rep     #$30
-        ply
-        ply
-
-        ; Print init_welcome_string to stdout
-        pea     init_welcome_string
-        jsr     strlen
-        rep     #$30
-        ply
-        pha
-        pea     init_welcome_string
-        pea     1
-        cop     5
-        rep     #$30
-        ply
-        ply
-        ply
-
-loop:
-        safe_brk
-        bra     loop
 .endproc
 
 .export main
@@ -133,7 +89,8 @@ loop:
         jsr     setup_systick_timer
 
         ; Start running process 1
-        jsr     create_proc
+        inc     disable_scheduler
+        jsr     clone_current_proc  ; TODO: Check for error state
         pea     proc1
         pea     $7fff
         pha
@@ -144,14 +101,8 @@ loop:
         ply
         lda     #1
         sta     a:Process::running,x
+        dec     disable_scheduler
 
 loop:
         bra     loop
 .endproc
-
-.rodata
-
-dev_ttyS0_path:
-        .asciiz "/dev/ttyS0"
-init_welcome_string:
-        .asciiz "Welcome to the Init process of MOSS!"

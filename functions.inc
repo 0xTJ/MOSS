@@ -129,6 +129,11 @@
         ; Disable skip saving
         stz     a:Process::skp_sav,x
 
+        ; Load PID 0's stack pointer, because it's guaranteed to always have space
+        ldx     proc_table + 0
+        lda     a:Process::reg_sp,x
+        tcs
+        
 @done:
 .endmacro
 
