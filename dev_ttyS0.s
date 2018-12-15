@@ -48,7 +48,7 @@ ttyS0_name:
 .proc dev_ttyS0_read
         setup_frame
         rep     #$30
-
+        
         ldx     z:5 ; buf
         ldy     z:7 ; nbytes
 
@@ -83,11 +83,11 @@ loop:
         bra     loop
 
 done_loop:
-        rep     #$30
-        lda     z:7 ; nbytes
-
         ; Restore D
         pld
+        
+        rep     #$30
+        lda     z:7 ; nbytes
 
         restore_frame
         rts
@@ -97,7 +97,7 @@ done_loop:
 .proc dev_ttyS0_write
         setup_frame
         rep     #$30
-
+        
         ldx     z:5 ; buf
         ldy     z:7 ; nbytes
 

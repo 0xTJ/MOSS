@@ -20,7 +20,7 @@
         jsr     traverse_abs_path
         rep     #$30
         ply
-        
+
         cmp     #0
         beq     failed
 
@@ -31,7 +31,7 @@
         lda     current_process_p
         add     #Process::files_p
         tax
-        
+
         ; Find the location in table of free file, location in X, file # in Y
         ldy     #0
 table_loop:
@@ -51,7 +51,7 @@ table_done:
 
         ; Push file #
         phy
-        
+
         ; Run open on it
         pea     0
         pha
@@ -62,7 +62,94 @@ table_done:
 
         ; Pull file #
         pla
-        
+
+done:
+        restore_frame
+        rts
+failed:
+        lda     #$FFFF  ; -1
+        bra     done
+.endproc
+
+; ssize_t read(int fildes, void *buf, size_t nbyte)
+.export read
+.proc read
+        setup_frame
+        rep     #$30
+
+        lda     z:3 ; filedes
+        cmp     #0
+        blt     failed
+        cmp     #PROC_MAX_FILES
+        bge     failed
+
+        ; Put filedes * 2 + base of file table into X
+        asl
+        add     current_process_p
+        add     #Process::files_p
+        tax
+
+        ; Load address of FSNode to A
+        lda     a:0,x
+
+        ; Run read on it
+        ldx     z:5 ; buf
+        phx
+        ldx     z:7 ; nbyte
+        phx
+        pea     0
+        pha
+        jsr     read_fs
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
+done:
+        restore_frame
+        rts
+failed:
+        lda     #$FFFF  ; -1
+        bra     done
+.endproc
+
+; ssize_t write(int fildes, const void *buf, size_t nbyte)
+.export write
+.proc write
+        setup_frame
+
+        rep     #$30
+
+        lda     z:3 ; filedes
+        cmp     #0
+        blt     failed
+        cmp     #PROC_MAX_FILES
+        bge     failed
+
+        ; Put filedes * 2 + base of file table into X
+        asl
+        add     current_process_p
+        add     #Process::files_p
+        tax
+
+        ; Load address of FSNode to A
+        lda     a:0,x
+
+        ; Run read on it
+        ldx     z:5 ; buf
+        phx
+        ldx     z:7 ; nbyte
+        phx
+        pea     0
+        pha
+        jsr     write_fs
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
 done:
         restore_frame
         rts

@@ -25,6 +25,8 @@ sysargn:
 syscall none, 0
 syscall get_pid, 0
 syscall open, 6
+syscall read, 6
+syscall write, 6
 
 ; Syscall number must be loaded into A
 .interruptor sys_call
@@ -165,4 +167,12 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_open
         jmp     open
+.endproc
+
+.proc sc_read
+        jmp     read
+.endproc
+
+.proc sc_write
+        jmp     write
 .endproc

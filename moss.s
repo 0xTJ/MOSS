@@ -87,6 +87,20 @@
         ply
         ply
 
+        ; Print init_welcome_string to stdout
+        pea     init_welcome_string
+        jsr     strlen
+        rep     #$30
+        ply
+        pha
+        pea     init_welcome_string
+        pea     1
+        cop     5
+        rep     #$30
+        ply
+        ply
+        ply
+
 loop:
         safe_brk
         bra     loop
@@ -139,7 +153,5 @@ loop:
 
 dev_ttyS0_path:
         .asciiz "/dev/ttyS0"
-test0_string:
-        .asciiz "test0"
-test1_string:
-        .asciiz "test1"
+init_welcome_string:
+        .asciiz "Welcome to the Init process of MOSS!"
