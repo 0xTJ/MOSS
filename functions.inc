@@ -88,6 +88,10 @@
 
         ; Put the address of the Process struct in X
         ldx     current_process_p
+        
+        ; Check if flag not to save latest state is set
+        lda     a:Process::skp_sav,x
+        bnz     @dont_save_registers
 
         ; Store Data Bank as 8-bit
         sep     #$20
@@ -118,6 +122,14 @@
         ; Store Stack Pointer as 16-bit
         tsc
         sta     a:Process::reg_sp,x
+        
+        bra     @done
+        
+@dont_save_registers:
+        ; Disable skip saving
+        stz     a:Process::skp_sav,x
+
+@done:
 .endmacro
 
 .macro exit_isr

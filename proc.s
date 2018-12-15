@@ -20,6 +20,9 @@ current_process_p:
 proc_table:
         .res    2 * PROC_NUM
 
+; Used to keep scheduler from loading other processes.
+; The current process's data will still be accesses and modified.
+; Disable interrupts when modifying the current process.
 .export disable_scheduler
 disable_scheduler:
         .word   0
@@ -79,7 +82,11 @@ loop_scheduling:
 commit_scheduling:
         stx     current_process_p
 
-        lda     z:Process::pid,x
+        lda     a:Process::pid,x
+
+        ; Set LEDs to PID
+        sta     PD7
+
 done:
         rts
 .endproc
@@ -96,15 +103,72 @@ done:
         ; Enable interrupts globally
         cli
 
-        ; Increment activity counter
-        lda     PD7
-        inc
-        sta     PD7
-
         jsr     scheduler
 
         exit_isr
         rti
+.endproc
+
+; void setup_proc(void *initial_sp, void *initial_pc)
+.export replace_current_proc
+.proc replace_current_proc
+        setup_frame
+        rep     #$30
+
+        ; Disable interrupts to safely modify current process
+        sei
+
+        ; Lock scheduler mutex for clarity
+        inc     disable_scheduler
+
+        ; Load current process
+        ldx     current_process_p
+
+        ; Store some registers in struct
+        stz     a:Process::reg_c,x
+        stz     a:Process::reg_d,x
+        stz     a:Process::reg_x,x
+        stz     a:Process::reg_y,x
+        sep     #$20
+        stz     a:Process::reg_db,x
+        stz     a:Process::bit_e,x
+        rep     #$20
+
+        ; Get address to store initial PC
+        ldx     z:3 ; initial_sp
+        dex
+        dex
+        dex
+        dex
+
+        ; Store flags and program bank
+        sep     #$20
+        stz     a:1,x
+        stz     a:4,x
+        rep     #$20
+
+        ; Store initial PC on process's stack
+        lda     z:5     ; initial_pc
+        sta     a:2,x   ; Store PC on process's stack
+
+        ; Put process's SP in A and struct pointer in X
+        txa
+        ldx     current_process_p
+
+        ; Store process's SP in struct
+        sta     a:Process::reg_sp,x
+
+        ; Set not saving state
+        lda     #1
+        sta     a:Process::skp_sav,x
+
+        ; Unlock scheduler mutex
+        dec     disable_scheduler
+
+        ; Enable interrupts, and wait for scheduler to take over
+        cli
+loop:
+        bra     loop
 .endproc
 
 ; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
@@ -112,8 +176,11 @@ done:
 .export setup_proc
 .proc setup_proc
         setup_frame
-
         rep     #$30
+
+        ; Lock scheduler mutex
+        inc     disable_scheduler
+
         ldx     z:3
 
         ; Store some registers in struct
@@ -150,6 +217,12 @@ done:
         ; Store process's SP in struct
         sta     a:Process::reg_sp,x
 
+        ; Reset not saving state
+        stz     a:Process::skp_sav,x
+
+        ; Unlock scheduler mutex
+        dec     disable_scheduler
+
         restore_frame
         rts
 .endproc
@@ -158,6 +231,7 @@ done:
 .export create_proc
 .proc create_proc
         rep     #$30
+
         inc     disable_scheduler
 
         ldx     #0
@@ -216,7 +290,7 @@ found_empty_proc:   ; X contains new PID * 2
         ; Store X and Y
         phx
         phy
-        
+
         ; Zero file descriptor pointer table
         pea     .sizeof(Process::files_p)
         pea     0
@@ -232,7 +306,7 @@ found_empty_proc:   ; X contains new PID * 2
         ; Restore X and Y
         ply
         plx
-        
+
         ; Store existing next in new process
         tya
         sta     a:Process::next,x

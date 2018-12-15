@@ -13,5 +13,7 @@ PROC_MAX_FILES = 4
         running .word
         next    .addr
         
+        skp_sav .word
+        
         files_p .addr 4
 .endstruct
