@@ -92,7 +92,7 @@
         pea     0
         pea     0
         pea     $7fff
-        pea     proc1
+        pea     user
         jsr     clone
         rep     #$30
         ply

@@ -6,7 +6,6 @@
 .autoimport
 
 .include "functions.inc"
-
 .include "proc.inc"
 .include "fcntl.inc"
 
@@ -14,7 +13,6 @@
 .export clone
 .proc clone
         setup_frame
-
         rep     #$30
 
         inc     disable_scheduler
@@ -40,7 +38,5 @@
         dec     disable_scheduler
 
         restore_frame
-
-
         rts
 .endproc

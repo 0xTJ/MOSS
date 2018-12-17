@@ -6,7 +6,6 @@
 .autoimport
 
 .include "functions.inc"
-.include "proc.inc"
 .include "fcntl.inc"
 
 .export proc1

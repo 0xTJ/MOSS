@@ -6,6 +6,7 @@
 .autoimport
 
 .include "functions.inc"
+.include "isr.inc"
 .include "proc.inc"
 
 PROC_NUM = 8

@@ -9,7 +9,6 @@
 
 .code
 
-.ifndef KERNEL
 ; ssize_t read(int fildes, void *buf, size_t nbyte)
 .export read
 .proc read
@@ -41,10 +40,10 @@
         pha
         lda     z:3 ; fildes
         pha
+        safe_brk
         
         cop     $05
 
         restore_frame
         rts
 .endproc
-.endif
