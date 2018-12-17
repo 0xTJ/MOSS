@@ -40,19 +40,18 @@
         jsr     puts
         rep     #$30
         ply
-        
-        ; Manually start running process 2
-        jsr     create_proc
-        pea     proc2
+
+        ; Start running process 2
+        pea     0
+        pea     0
         pea     $77ff
-        pha
-        jsr     setup_proc
+        pea     proc2
+        jsr     clone
         rep     #$30
-        plx
         ply
         ply
-        lda     #1
-        sta     a:Process::running,x
+        ply
+        ply
 
 loop:
         bra     loop

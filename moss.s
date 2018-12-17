@@ -89,19 +89,16 @@
         jsr     setup_systick_timer
 
         ; Start running process 1
-        inc     disable_scheduler
-        jsr     clone_current_proc  ; TODO: Check for error state
-        pea     proc1
+        pea     0
+        pea     0
         pea     $7fff
-        pha
-        jsr     setup_proc
+        pea     proc1
+        jsr     clone
         rep     #$30
-        plx
         ply
         ply
-        lda     #1
-        sta     a:Process::running,x
-        dec     disable_scheduler
+        ply
+        ply
 
 loop:
         bra     loop
