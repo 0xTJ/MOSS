@@ -8,6 +8,12 @@
 .include "functions.inc"
 .include "fcntl.inc"
 
+.segment "STARTUP"
+
+        jmp     proc1
+        
+.code
+
 .export proc1
 .proc proc1
         ; Setup stdin
@@ -39,7 +45,8 @@
         jsr     puts
         rep     #$30
         ply
-
+        safe_brk
+        
         ; Start running process 2
         pea     0
         pea     0
@@ -51,6 +58,7 @@
         ply
         ply
         ply
+        safe_brk
 
 loop:
         bra     loop

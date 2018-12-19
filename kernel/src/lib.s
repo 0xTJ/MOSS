@@ -1,6 +1,8 @@
 .p816
 .smart
 
+.include "functions.inc"
+
 .macpack generic
 
 .autoimport

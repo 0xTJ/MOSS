@@ -91,6 +91,7 @@ failed:
 
         ; Load address of FSNode to A
         lda     a:0,x
+        bze     failed
 
         ; Run read on it
         ldx     z:5 ; buf
@@ -118,7 +119,6 @@ failed:
 .export write
 .proc write
         setup_frame
-
         rep     #$30
 
         lda     z:3 ; filedes
@@ -135,6 +135,7 @@ failed:
 
         ; Load address of FSNode to A
         lda     a:0,x
+        bze     failed
 
         ; Run read on it
         ldx     z:5 ; buf

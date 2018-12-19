@@ -66,7 +66,8 @@ syscall clone, 14
         cmp     #__SYSCALL_COUNT__
         bgt     invalid_syscall
 
-        ; Push the Syscall #
+        ; Push D then the Syscall #
+        phd
         pha
 
         ; Load D with the address below the Syscall #
@@ -83,6 +84,10 @@ syscall clone, 14
         ; |                     |  |
         ; +---------------------+  |
         ; | Status Register     | /
+        ; +---------------------+
+        ; |                     |
+        ; + D Register          +
+        ; |                     |
         ; +---------------------+
         ; |                     |
         ; + Syscall #           +
@@ -103,7 +108,7 @@ syscall clone, 14
         inc
         tay         ; Address right below the Syscall # in stack
 
-        add     #6  ; Address of the K Register in stack
+        add     #8  ; Address of the K Register in stack
         add     1,s ; Add the number of arguments
         tax         ; Address of the deepest byte in the stack
 
@@ -133,12 +138,13 @@ syscall_call:
         
         rep     #$30
 
-        ; Restore SP and remove Syscall # from stack
+        ; Restore SP, D and remove Syscall # from stack
         tax
         tdc
         tcs
         pla
         txa
+        pld
 
         rti
 

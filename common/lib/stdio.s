@@ -20,7 +20,7 @@
         add     3
         pha         ; &c
         pea     1   ; stdout
-        
+
         jsr     write
 
         restore_frame
@@ -45,7 +45,7 @@
         lda     z:3 ; s
         pha         ; s
         pea     1   ; stdout
-        
+
         jsr     write
 
         restore_frame

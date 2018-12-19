@@ -133,6 +133,7 @@ failed:
 ; unsigned int fs_dev_write(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .export fs_dev_write
 .proc fs_dev_write
+        setup_frame
         rep     #$30
 
         ldx     z:3 ; node
@@ -303,7 +304,7 @@ done:
         jsr     malloc
         rep     #$30
         ply
-        bze     failed_driver_alloc
+        jeq     failed_driver_alloc
         tax
 
         ; Store driver to struct
@@ -322,6 +323,7 @@ done:
         stz     a:Device::next,x
 
         ; Generate inode #
+        ; TODO
 
         ; Load FSNode
         lda     z:7
@@ -341,7 +343,7 @@ chardevice:
         ply
         ply
         plx     ; Restore X
-
+        
         lda     #FS_CHARDEVICE
         sta     a:Device::fsnode + FSNode::flags,x
         inc     last_dev_inode

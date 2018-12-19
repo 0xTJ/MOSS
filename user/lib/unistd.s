@@ -40,7 +40,6 @@
         pha
         lda     z:3 ; fildes
         pha
-        safe_brk
         
         cop     $05
 
