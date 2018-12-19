@@ -29,7 +29,7 @@
         lda     z:3     ; fn
         pha
         
-        cop     $04
+        cop     $06
 
         restore_frame
         rts

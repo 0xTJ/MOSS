@@ -58,7 +58,6 @@
         ply
         ply
         ply
-        safe_brk
 
 loop:
         bra     loop
