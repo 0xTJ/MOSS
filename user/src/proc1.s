@@ -45,7 +45,6 @@
         jsr     puts
         rep     #$30
         ply
-        safe_brk
         
         ; Start running process 2
         pea     0

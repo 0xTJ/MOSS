@@ -8,12 +8,14 @@ PROC_MAX_FILES = 4
         reg_x   .word
         reg_y   .word
         bit_e   .byte
-        
+
         pid     .word
+        ppid    .word
+
         running .word
         next    .addr
-        
+
         skp_sav .word
-        
+
         files_p .addr 4
 .endstruct

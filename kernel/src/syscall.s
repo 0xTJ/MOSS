@@ -23,11 +23,13 @@ syscall_count .set syscall_count + 1
 .export sysargn
 sysargn:
 syscall none, 0
-syscall get_pid, 0
+syscall x0, 0
 syscall open, 6
 syscall read, 6
 syscall write, 6
 syscall clone, 14
+syscall getpid, 0
+syscall getppid, 0
 
 ; Syscall number must be loaded into A
 .interruptor sys_call
@@ -163,11 +165,24 @@ emul_mode:  ; Syscalls in emulation mode not supported
         rts
 .endproc
 
-.proc sc_get_pid
+.proc sc_x0
+        rts
+.endproc
+
+.proc sc_getpid
         rep     #$30
         
         ldx     current_process_p
         lda     Process::pid,x
+
+        rts
+.endproc
+
+.proc sc_getppid
+        rep     #$30
+        
+        ldx     current_process_p
+        lda     Process::ppid,x
 
         rts
 .endproc

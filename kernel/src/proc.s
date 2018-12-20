@@ -46,6 +46,7 @@ disable_scheduler:
         sta     a:Process::next,x
         lda     #0
         sta     a:Process::pid,x
+        sta     a:Process::ppid,x
         lda     #1
         sta     a:Process::running,x
 
@@ -160,6 +161,8 @@ done:
         ; Restore PID and next
         pla
         sta     a:Process::next,x
+        lda     a:Process::pid,x
+        lda     a:Process::ppid,x
         pla
         sta     a:Process::pid,x
 
@@ -349,6 +352,13 @@ found_empty_proc:   ; X contains new PID * 2
         pla
         lsr
         sta     a:Process::pid,x
+        
+        ; Set parent PID
+        phx
+        ldx     current_process_p
+        lda     a:Process::pid,x
+        plx
+        sta     a:Process::ppid,x
 
         ; Mark as not yet running
         stz     a:Process::running,x
