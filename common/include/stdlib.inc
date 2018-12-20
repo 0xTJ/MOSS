@@ -2,6 +2,10 @@
         quot    .word
         rem     .word
 .endstruct
+.struct udiv_t
+        quot    .word
+        rem     .word
+.endstruct
 
 EXIT_FAILURE    := 1
 EXIT_SUCCESS    := 0

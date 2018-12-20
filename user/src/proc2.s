@@ -9,9 +9,9 @@
 
 .export proc2
 .proc proc2
-        pea     16
+        pea     2
         pea     $2000
-        pea     478
+        pea     $863B
         jsr     itoa
         pha
         jsr     puts
