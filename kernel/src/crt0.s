@@ -3,9 +3,8 @@
 
 .macpack generic
 
-.autoimport
-
 .include "functions.inc"
+.include "lib.inc"
 
 .export STACK_SIZE = 1024
 
@@ -13,6 +12,9 @@
 
         .res    STACK_SIZE
 
+.import __STACK_LOAD__
+.import main
+        
 .segment "STARTUP"
 
 .export init

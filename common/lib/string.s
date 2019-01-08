@@ -3,8 +3,7 @@
 
 .macpack generic
 
-.autoimport
-
+.include "string.inc"
 .include "functions.inc"
 
 .code

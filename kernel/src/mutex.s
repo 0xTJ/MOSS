@@ -3,8 +3,6 @@
 
 .macpack generic
 
-.autoimport
-
 .include "functions.inc"
 
 ; void mutex_take(int *mutex_p)

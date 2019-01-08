@@ -4,14 +4,14 @@
 .macpack generic
 .macpack longbranch
 
-.autoimport
-
+.include "initrd.inc"
 .include "functions.inc"
 .include "filesys.inc"
+.include "stdlib.inc"
+.include "string.inc"
 
 .data
 
-.export initrd_root_dir
 initrd_root_dir:
         .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
         .word   FS_DIRECTORY        ; flags
@@ -25,7 +25,6 @@ initrd_root_dir:
         .word   0                   ; impl
         .addr   0                   ; ptr
 
-.export initrd_dev_dir
 initrd_dev_dir:
         .byte   'd', 'e', 'v', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
         .word   FS_DIRECTORY        ; flags

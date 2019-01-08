@@ -4,3 +4,6 @@
 .endstruct
 
 DEV_TYPE_CHAR = 1
+
+; void register_driver(struct CharDriver *driver, const char *name, int type)
+.global register_driver

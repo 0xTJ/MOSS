@@ -3,10 +3,9 @@
 
 .macpack generic
 
-.autoimport
-
 .include "functions.inc"
 .include "dev.inc"
+.include "mensch.inc"
 
 .bss
 

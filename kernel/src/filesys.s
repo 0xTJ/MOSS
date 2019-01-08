@@ -4,14 +4,11 @@
 .macpack generic
 .macpack longbranch
 
-.autoimport
-
-.include "functions.inc"
 .include "filesys.inc"
+.include "functions.inc"
 
 .data
 
-.export root_dir
 root_dir:
         .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
         .word   FS_DIRECTORY    ; flags
@@ -211,7 +208,6 @@ failed:
 .endproc
 
 ; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
-.export mount_fs
 .proc mount_fs
         setup_frame
 
@@ -246,7 +242,6 @@ invalid_type:
 .endproc
 
 ; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
-.export read_fs
 .proc read_fs
         setup_frame
 
@@ -285,7 +280,6 @@ done:
 .endproc
 
 ; unsigned int write_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
-.export write_fs
 .proc write_fs
         setup_frame
 
@@ -324,7 +318,6 @@ done:
 .endproc
 
 ; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
-.export open_fs
 .proc open_fs
         setup_frame
 
@@ -364,7 +357,6 @@ done:
 .endproc
 
 ; void close_fs(struct FSNode *node)
-.export close_fs
 .proc close_fs
         setup_frame
 
@@ -394,7 +386,6 @@ done:
 .endproc
 
 ; struct DirEnt *readdir_fs(struct FSNode *node, unsigned int index)
-.export readdir_fs
 .proc readdir_fs
         setup_frame
 
@@ -427,7 +418,6 @@ done:
 .endproc
 
 ; struct FSNode *finddir_fs(struct FSNode *node, char *name)
-.export finddir_fs
 .proc finddir_fs
         setup_frame
 

@@ -3,11 +3,12 @@
 
 .macpack generic
 
-.autoimport
-
-.include "functions.inc"
-.include "isr.inc"
 .include "proc.inc"
+.include "functions.inc"
+.include "stdlib.inc"
+.include "string.inc"
+.include "w65c265s.inc"
+.include "isr.inc"
 
 PROC_NUM = 8
 

@@ -4,10 +4,12 @@
 .macpack generic
 .macpack longbranch
 
-.autoimport
-
-.include "proc.inc"
+.include "syscall.inc"
 .include "functions.inc"
+.include "proc.inc"
+.include "unistd.inc"
+.include "sched.inc"
+.include "fcntl.inc"
 
 .macro syscall sc_proc, arg_count
 .ifndef syscall_count
@@ -30,6 +32,9 @@ syscall write, 6
 syscall clone, 14
 syscall getpid, 0
 syscall getppid, 0
+
+.import __SYSCALL_TABLE__
+.import __SYSCALL_COUNT__
 
 ; Syscall number must be loaded into A
 .interruptor sys_call

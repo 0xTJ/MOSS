@@ -3,8 +3,7 @@
 
 .macpack generic
 
-.autoimport
-
+.include "sched.inc"
 .include "functions.inc"
 .include "fcntl.inc"
 

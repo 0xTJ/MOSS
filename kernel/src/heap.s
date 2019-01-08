@@ -4,8 +4,7 @@
 .macpack generic
 .macpack longbranch
 
-.autoimport
-
+.include "stdlib.inc"
 .include "functions.inc"
 
 .struct HeapTag
@@ -17,8 +16,10 @@
 .segment "HEAP"
         .res    $1000
 
+.import __HEAP_LOAD__
+.import __HEAP_SIZE__
+        
 .code
-
 
 .constructor heap_init, 1
 .proc heap_init

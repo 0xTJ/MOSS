@@ -3,16 +3,18 @@
 
 .macpack generic
 
-.autoimport
-
 .include "functions.inc"
 .include "fcntl.inc"
+.include "stdio.inc"
+.include "sched.inc"
 
 .segment "STARTUP"
 
         jmp     proc1
-        
+
 .code
+
+.import proc2
 
 .export proc1
 .proc proc1
@@ -45,7 +47,7 @@
         jsr     puts
         rep     #$30
         ply
-        
+
         ; Start running process 2
         pea     0
         pea     0
@@ -67,4 +69,4 @@ loop:
 dev_ttyS0_path:
         .asciiz "/dev/ttyS0"
 init_welcome_string:
-        .asciiz "Welcome to the Init process of MOSS!"
+        .byte $D, "Welcome to the init process of MOSS!", $D, 0

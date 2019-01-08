@@ -3,14 +3,13 @@
 
 .macpack generic
 
-.autoimport
-
 .include "proc.inc"
 .include "functions.inc"
+.include "fcntl.inc"
 .include "filesys.inc"
+.include "unistd.inc"
 
 ; int open(const char *path, int oflag, ... )
-.export open
 .proc open
         setup_frame
         rep     #$30
@@ -72,7 +71,6 @@ failed:
 .endproc
 
 ; ssize_t read(int fildes, void *buf, size_t nbyte)
-.export read
 .proc read
         setup_frame
         rep     #$30
@@ -116,7 +114,6 @@ failed:
 .endproc
 
 ; ssize_t write(int fildes, const void *buf, size_t nbyte)
-.export write
 .proc write
         setup_frame
         rep     #$30

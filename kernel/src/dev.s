@@ -4,11 +4,12 @@
 .macpack generic
 .macpack longbranch
 
-.autoimport
-
 .include "functions.inc"
 .include "filesys.inc"
 .include "dev.inc"
+.include "initrd.inc"
+.include "stdlib.inc"
+.include "string.inc"
 
 .struct Device
         type    .word
@@ -20,7 +21,6 @@
 
 .bss
 
-.export devices_list
 devices_list:
         .addr   0
 
@@ -29,7 +29,6 @@ last_dev_inode:
 
 .data
 
-.export dev_root_dir
 dev_root_dir:
         .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
         .word   FS_DIRECTORY    ; flags
@@ -85,7 +84,6 @@ done:
 .endproc
 
 ; unsigned int fs_dev_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
-.export fs_dev_read
 .proc fs_dev_read
         setup_frame
         rep     #$30
@@ -131,7 +129,6 @@ failed:
 .endproc
 
 ; unsigned int fs_dev_write(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
-.export fs_dev_write
 .proc fs_dev_write
         setup_frame
         rep     #$30
@@ -177,7 +174,6 @@ failed:
 .endproc
 
 ; struct DirEnt *fs_dev_readdir(struct FSNode *node, unsigned int index)
-.export fs_dev_readdir
 .proc fs_dev_readdir
         setup_frame
         rep     #$30
@@ -257,7 +253,6 @@ failed:
 .endproc
 
 ; struct FSNode *fs_dev_finddir(struct FSNode *node, char *name)
-.export fs_dev_finddir
 .proc fs_dev_finddir
         setup_frame
         rep     #$30
@@ -294,7 +289,6 @@ done:
 .endproc
 
 ; void register_driver(struct CharDriver *driver, const char *name, int type)
-.export register_driver
 .proc register_driver
         setup_frame
         rep     #$30

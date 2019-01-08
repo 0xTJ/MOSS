@@ -5,7 +5,15 @@
 
 .macpack generic
 
-.autoimport
+.import __BSS_LOAD__
+.import __BSS_SIZE__
+.import __DATA_LOAD__
+.import __DATA_RUN__
+.import __DATA_SIZE__
+.import __CONSTRUCTOR_TABLE__
+.import __CONSTRUCTOR_COUNT__
+.import __DESTRUCTOR_TABLE__
+.import __DESTRUCTOR_COUNT__
 
 .code
 
@@ -26,7 +34,6 @@ done_bss:
         rts
 .endproc
 
-
 .export copydata
 .proc copydata
         rep     #$30
@@ -39,7 +46,6 @@ done_bss:
 done_data:
         rts
 .endproc
-
 
 .export initlib
 .proc initlib
@@ -62,7 +68,6 @@ loop_constructors:
 done_constructors:
         rts
 .endproc
-
 
 .export donelib
 .proc donelib

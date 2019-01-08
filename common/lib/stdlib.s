@@ -3,10 +3,9 @@
 
 .macpack generic
 
-.autoimport
-
-.include "functions.inc"
 .include "stdlib.inc"
+.include "functions.inc"
+.include "builtin.inc"
 
 .code
 

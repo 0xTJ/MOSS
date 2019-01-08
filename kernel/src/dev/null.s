@@ -3,8 +3,6 @@
 
 .macpack generic
 
-.autoimport
-
 .include "functions.inc"
 .include "dev.inc"
 

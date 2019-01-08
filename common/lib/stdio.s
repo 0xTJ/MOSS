@@ -3,14 +3,14 @@
 
 .macpack generic
 
-.autoimport
-
+.include "stdio.inc"
 .include "functions.inc"
+.include "string.inc"
+.include "unistd.inc"
 
 .code
 
 ; int putchar(int c)
-.export putchar
 .proc putchar
         setup_frame
         rep     #$30
@@ -28,7 +28,6 @@
 .endproc
 
 ; int puts(const char *s)
-.export puts
 .proc puts
         setup_frame
         rep     #$30

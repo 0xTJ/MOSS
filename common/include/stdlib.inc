@@ -21,3 +21,7 @@ NULL            := 0
 .global ldiv
 ; char *itoa (int value, char *str, int base)
 .global itoa
+; void * near malloc(size_t size) near
+.global malloc
+; void free(void * far ptr) far
+.global free

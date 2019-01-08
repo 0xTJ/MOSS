@@ -3,16 +3,20 @@
 
 .macpack generic
 
-.autoimport
-
 .include "functions.inc"
 .include "proc.inc"
 .include "fcntl.inc"
+.include "sched.inc"
+.include "mensch.inc"
+.include "w65c265s.inc"
+.include "syscall.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
 
 .import F_CLK: far
+
+.import user
 
 .code
 
