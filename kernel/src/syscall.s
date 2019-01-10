@@ -25,7 +25,7 @@ syscall_count .set syscall_count + 1
 .export sysargn
 sysargn:
 syscall none, 0
-syscall x0, 0
+syscall debug, 0
 syscall open, 6
 syscall read, 6
 syscall write, 6
@@ -170,8 +170,8 @@ emul_mode:  ; Syscalls in emulation mode not supported
         rts
 .endproc
 
-.proc sc_x0
-        rts
+.proc sc_debug
+        jmp     dump_process_table
 .endproc
 
 .proc sc_getpid

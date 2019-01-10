@@ -9,27 +9,126 @@
 .include "string.inc"
 .include "w65c265s.inc"
 .include "isr.inc"
+.include "stdio.inc"
 
 PROC_NUM = 8
 
 .bss
 
-.export current_process_p
 current_process_p:
         .addr   0
 
-.export proc_table
 proc_table:
         .res    2 * PROC_NUM
 
 ; Used to keep scheduler from loading other processes.
 ; The current process's data will still be accesses and modified.
 ; Disable interrupts when modifying the current process.
-.export disable_scheduler
 disable_scheduler:
         .word   0
 
 .code
+
+.pushseg
+.bss
+
+tmp_string:
+        .res 16
+
+.rodata
+
+sep_str:
+        .asciiz "-"
+pid_str:
+        .asciiz "PID:"
+ppid_str:
+        .asciiz "PPID:"
+
+.popseg
+
+; void print_process(struct Process *proc)
+.proc print_process
+        setup_frame
+        rep     #$30
+
+        pea     10
+        pea     tmp_string
+
+        pea     pid_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:3 ; proc
+        lda     a:Process::pid,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     ppid_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:3 ; proc
+        lda     a:Process::ppid,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+
+        ply
+        ply
+
+        restore_frame
+        rts
+.endproc
+
+; void dump_process_table(void)
+.proc dump_process_table
+        rep     #$30
+
+        inc     disable_scheduler
+
+        ldx     #0
+
+loop:
+        lda     a:proc_table,x
+        bze     skip
+        phx
+        pha
+
+        pea     sep_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        jsr     print_process
+        rep     #$30
+        plx
+        plx
+skip:
+        inx
+        inx
+        cpx     #PROC_NUM * 2
+        blt     loop
+
+        pea     sep_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        dec disable_scheduler
+
+        rts
+.endproc
 
 .constructor init_processes
 .proc init_processes
@@ -39,6 +138,8 @@ disable_scheduler:
         jsr     malloc
         rep     #$30
         ply
+
+        ; TODO: check for success of malloc
 
         sta     proc_table + 0
         sta     current_process_p
@@ -115,7 +216,6 @@ done:
 ; struct Process *clone_current_proc()
 ; Properly setting SP must be managed by calling function.
 ; Set to not running.
-.export clone_current_proc
 .proc clone_current_proc
         rep     #$30
 
@@ -133,7 +233,7 @@ done:
         beq     failed
 
         tax
-        
+
         ; Save PID and next for later
         ldy     a:Process::pid,x
         phy
@@ -142,10 +242,10 @@ done:
 
         ; Save process struct for later
         phx
-        
+
         ; Load current process struct
         ldx     current_process_p
-        
+
         ; Copy process info
         pea     .sizeof(Process)
         phx
@@ -155,15 +255,15 @@ done:
         ply
         ply
         ply
-        
+
         ; Restore new process struct
         plx
-        
+
         ; Restore PID and next
         pla
         sta     a:Process::next,x
         lda     a:Process::pid,x
-        lda     a:Process::ppid,x
+        sta     a:Process::ppid,x
         pla
         sta     a:Process::pid,x
 
@@ -172,7 +272,7 @@ done:
 
         ; Set to not running
         stz     a:Process::running,x
-        
+
         txa
 
 done:
@@ -190,7 +290,6 @@ failed:
 .endproc
 
 ; void setup_proc(void *initial_sp, void *initial_pc)
-.export replace_current_proc
 .proc replace_current_proc
         setup_frame
         rep     #$30
@@ -253,7 +352,6 @@ loop:
 
 ; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
 ; Assumes Program Bank is $00
-.export setup_proc
 .proc setup_proc
         setup_frame
         rep     #$30
@@ -298,7 +396,6 @@ loop:
 .endproc
 
 ; struct Process *create_proc(void)
-.export create_proc
 .proc create_proc
         rep     #$30
 
@@ -353,7 +450,7 @@ found_empty_proc:   ; X contains new PID * 2
         pla
         lsr
         sta     a:Process::pid,x
-        
+
         ; Set parent PID
         phx
         ldx     current_process_p
@@ -437,7 +534,6 @@ found_prev:
 .endproc
 
 ; void destroy_proc(int pid)
-.export destroy_proc
 .proc destroy_proc
         setup_frame
         rep     #$30
@@ -482,7 +578,7 @@ found_prev:
         ply
 
         ; The process to be removed has now been removed from the execution chain
-
+        
         ; TODO: Release resources
 
         ; Store struct address for use by free
