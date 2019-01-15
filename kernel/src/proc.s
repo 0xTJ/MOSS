@@ -209,7 +209,7 @@ commit_scheduling:
 
         ; Set LEDs to PID
         sep     #$20
-        ; sta     PD7
+        sta     PD7
         rep     #$20
 
 done:
@@ -224,9 +224,6 @@ done:
         sep     #$20
         lda     #1 << 2
         sta     TIFR
-
-        ; Enable interrupts globally
-        cli
 
         jsr     scheduler
 

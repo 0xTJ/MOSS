@@ -21,24 +21,25 @@
 .code
 
 ; void install_user_vector(void * far user_vector_loc, void (*vector_isr)(void) far) far
-.proc install_user_vector_jsr_abs
-        rep     #$30
+; .proc install_user_vector_jsr_abs
+        ; rep     #$30
 
-        lda     #$5C ; JMP far
-        ldy     #0
-        sta     (3,s),y
+        ; lda     #$5C ; JMP far
+        ; ldy     #0
+        ; sta     (3,s),y
 
-        lda     5,s
-        ldy     #1
-        sta     (3,s),y
+        ; lda     5,s
+        ; ldy     #1
+        ; sta     (3,s),y
 
-        rts
-.endproc
+        ; rts
+; .endproc
 
 .proc setup_systick_timer
         ; Disable T2
         sep     #$20
         lda     TER
+        lda     #0
         and     #.lobyte(~(1 << 2))
         sta     TER
 
@@ -70,21 +71,29 @@
 .proc main
         rep     #$30
 
+        lda     BCR
+        ora     #$80
+        sta     BCR
+        
         ; Load T2 vector
-        pea     sys_tick
-        pea     UNIRQT2
-        jsr     install_user_vector_jsr_abs
-        rep     #$30
-        ply
-        ply
+        ; pea     sys_tick
+        ; pea     UNIRQT2
+        ; jsr     install_user_vector_jsr_abs
+        ; rep     #$30
+        ; ply
+        ; ply
+        lda     #sys_tick
+        sta     NAT_IRQT2
 
         ; Load COP vector
-        pea     sys_call
-        pea     COPIRQ
-        jsr     install_user_vector_jsr_abs
-        rep     #$30
-        ply
-        ply
+        ; pea     sys_call
+        ; pea     COPIRQ
+        ; jsr     install_user_vector_jsr_abs
+        ; rep     #$30
+        ; ply
+        ; ply
+        lda     #sys_call
+        sta     NAT_IRQCOP
 
         ; Show P7 on LEDS
         stz     PCS7

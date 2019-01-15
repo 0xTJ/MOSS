@@ -41,7 +41,7 @@ init:
 exit:
         ; jsr     donelib
 @brkloop:
-        safe_brk
+        ; safe_brk
         bra     @brkloop
 
 .rodata

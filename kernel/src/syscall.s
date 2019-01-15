@@ -144,14 +144,6 @@ syscall_call:
         jsr     (__SYSCALL_TABLE__,x)
         ; Return value in A
         
-        pha
-        php
-        sep     #$20
-        lda     #$20
-        sta     $DF23 
-        plp
-        pla
-        
         rep     #$30
 
         ; Restore SP, D and remove Syscall # from stack

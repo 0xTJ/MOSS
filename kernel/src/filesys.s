@@ -310,38 +310,6 @@ done:
         ply
         ply
         ply
-        
-        pha
-        php
-        sep     #$20
-        lda     #$D0
-        sta     $DF23
-        plp
-        pla
-        
-        pha
-        php
-        sep     #$20
-        lda     #$C0
-        sta     $DF23
-        plp
-        pla
-        
-        pha
-        php
-        sep     #$20
-        lda     #$C1
-        sta     $DF23
-        plp
-        pla
-        
-        pha
-        php
-        sep     #$20
-        tsc
-        sta     $DF23
-        plp
-        pla
 
 done:
         restore_frame

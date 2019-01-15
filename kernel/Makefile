@@ -13,9 +13,8 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(
 all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET) user.bin
-	bin2mot -O0x006000 -L0x001100 -2 -H $<
+	bin2mot -O0x006000 -L0x001200 -2 -H $<
 	bin2mot -O0x008000 -L0x000500 -2 -H -A user.bin $<.mot
-	bin2mot -O0x01FF00 -L0x000100 -2 -H -A vectors.bin $<.mot
 
 $(TARGET) user.bin: $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
