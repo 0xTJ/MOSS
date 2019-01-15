@@ -17,7 +17,7 @@
 
         pea     1   ; write 1 byte
         tdc
-        add     3
+        add     #3
         pha         ; &c
         pea     1   ; stdout
 
@@ -36,7 +36,6 @@
         pha
 
         jsr     strlen
-
         rep     #$30
         ply
 
@@ -46,6 +45,15 @@
         pea     1   ; stdout
 
         jsr     write
+        rep     #$30
+        ply
+        ply
+        ply
+        
+        pea     a:10    ; NL
+        jsr     putchar
+        rep     #$30
+        ply
 
         restore_frame
         rts

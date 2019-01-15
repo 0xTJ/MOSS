@@ -115,6 +115,16 @@ skip_negate:
         lda     #0
         pha
         rep     #$20
+        
+check_zero_value:
+        lda     z:3 ; value
+        bnz     loop_finding_chars
+        sep     #$20
+        lda     #'0'
+        pha
+        rep     #$20
+        phy
+        bra     done_finding_chars
 
 loop_finding_chars:
         lda     z:7 ; base
@@ -126,9 +136,10 @@ loop_finding_chars:
         rep     #$30
         ply
         ply
-        ; A: value / base
-        ; X: least significant digit of value that was removed
-        sta     z:3 ; Replace value with value / base
+        ; X: value / base
+        ; A: least significant digit of value that was removed
+        stx     z:3 ; Replace value with value / base
+        tax
 
         sep     #$20
         lda     base36chars,x
@@ -158,7 +169,7 @@ write_loop:
 done:
         restore_frame
         rts
-
+        
 failed:
         lda     #NULL
         bra     done

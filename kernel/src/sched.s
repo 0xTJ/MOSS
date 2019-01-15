@@ -32,8 +32,8 @@
 
         plx
 
-        lda     #1
-        sta     a:Process::running,x
+        lda     #PROCESS_READY
+        sta     a:Process::state,x
         dec     disable_scheduler
 
         restore_frame

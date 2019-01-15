@@ -147,6 +147,14 @@ failed:
         ply
         ply
         ply
+        
+        pha
+        php
+        sep     #$20
+        lda     #$E0
+        sta     $DF23 
+        plp
+        pla
 
 done:
         restore_frame

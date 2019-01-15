@@ -4,8 +4,10 @@
 .macpack generic
 
 .include "functions.inc"
+.include "proc.inc"
 .include "dev.inc"
 .include "mensch.inc"
+.include "w65c265s.inc"
 
 .bss
 
@@ -22,7 +24,7 @@ ttyS0_name:
 .constructor dev_ttyS0_init
 .proc dev_ttyS0_init
         rep     #$30
-
+        
         ldx     #ttyS0_driver
 
         lda     #dev_ttyS0_read
@@ -47,7 +49,7 @@ ttyS0_name:
 .proc dev_ttyS0_read
         setup_frame
         rep     #$30
-        
+
         ldx     z:5 ; buf
         ldy     z:7 ; nbytes
 
@@ -66,7 +68,7 @@ loop:
         phy
 
         jsl     GET_CHR
-        
+
         rep     #$10
         sep     #$20
 
@@ -84,7 +86,7 @@ loop:
 done_loop:
         ; Restore D
         pld
-        
+
         rep     #$30
         lda     z:7 ; nbytes
 
@@ -116,11 +118,19 @@ loop:
         phx
         phy
 
-        jsl     PUT_CHR
+        inc     disable_scheduler
+        
+        
+send_loop:
+        jsl     SEND_BYTE_TO_PC
+        bcs     send_loop
+        ; sta     ARTD3
+
+        dec     disable_scheduler
 
         rep     #$10
         sep     #$20
-        
+
         ply
         plx
 
@@ -131,6 +141,12 @@ loop:
         bra     loop
 
 done_loop:
+        
+        sep     #$20
+        lda     #$0F
+        sta     PD7
+        rep     #$20
+        
         rep     #$30
         lda     z:7 ; nbytes
 

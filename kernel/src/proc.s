@@ -43,6 +43,8 @@ pid_str:
         .asciiz "PID:"
 ppid_str:
         .asciiz "PPID:"
+state_str:
+        .asciiz "State:"
 
 .popseg
 
@@ -84,6 +86,21 @@ ppid_str:
         rep     #$30
         ply
 
+        pea     state_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:3 ; proc
+        lda     a:Process::state,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+
         ply
         ply
 
@@ -95,9 +112,9 @@ ppid_str:
 .proc dump_process_table
         rep     #$30
 
-        inc     disable_scheduler
-
         ldx     #0
+        
+        inc     disable_scheduler
 
 loop:
         lda     a:proc_table,x
@@ -105,6 +122,7 @@ loop:
         phx
         pha
 
+        ; safe_brk
         pea     sep_str
         jsr     puts
         rep     #$30
@@ -112,7 +130,7 @@ loop:
 
         jsr     print_process
         rep     #$30
-        plx
+        ply
         plx
 skip:
         inx
@@ -124,8 +142,8 @@ skip:
         jsr     puts
         rep     #$30
         ply
-
-        dec disable_scheduler
+        
+        dec     disable_scheduler
 
         rts
 .endproc
@@ -149,8 +167,8 @@ skip:
         lda     #0
         sta     a:Process::pid,x
         sta     a:Process::ppid,x
-        lda     #1
-        sta     a:Process::running,x
+        lda     #PROCESS_READY
+        sta     a:Process::state,x
 
         pea     .sizeof(Process::files_p)
         pea     0
@@ -180,8 +198,9 @@ loop_scheduling:
         lda     a:Process::next,x
         tax
 
-        lda     a:Process::running,x
-        bze     loop_scheduling
+        lda     a:Process::state,x
+        cmp     #PROCESS_READY
+        bne     loop_scheduling
 
 commit_scheduling:
         stx     current_process_p
@@ -189,7 +208,9 @@ commit_scheduling:
         lda     a:Process::pid,x
 
         ; Set LEDs to PID
-        sta     PD7
+        sep     #$20
+        ; sta     PD7
+        rep     #$20
 
 done:
         rts
@@ -271,7 +292,8 @@ done:
         stz     a:Process::reg_sp,x
 
         ; Set to not running
-        stz     a:Process::running,x
+        lda     #PROCESS_CREATED
+        sta     a:Process::state,x
 
         txa
 
@@ -289,7 +311,7 @@ failed:
         bra     done
 .endproc
 
-; void setup_proc(void *initial_sp, void *initial_pc)
+; void replace_current_proc(void *initial_sp, void *initial_pc)
 .proc replace_current_proc
         setup_frame
         rep     #$30
@@ -459,7 +481,8 @@ found_empty_proc:   ; X contains new PID * 2
         sta     a:Process::ppid,x
 
         ; Mark as not yet running
-        stz     a:Process::running,x
+        lda     #PROCESS_CREATED
+        sta     a:Process::state,x
 
         ; Reset registers in struct
         stz     a:Process::reg_c,x
@@ -533,8 +556,8 @@ found_prev:
         rts
 .endproc
 
-; void destroy_proc(int pid)
-.proc destroy_proc
+; void term_proc(int pid)
+.proc term_proc
         setup_frame
         rep     #$30
 
@@ -550,8 +573,52 @@ found_prev:
         tax
 
         ; Mark as not running
-        lda     #0
-        sta     a:Process::running,x
+        lda     #PROCESS_TERMINATED
+        sta     a:Process::state,x
+
+        ; Set all children to have PPID 1
+        ldx     #0
+child_ppid_loop:
+        ; Load PPID of a process in table to A, but skip if process doesn't exist
+        ldy     a:proc_table,x
+        bze     skip
+        lda     a:Process::ppid,y
+        ; Check if process has PPID as process being deleted
+        cmp     z:3 ; pid
+        bne     skip
+        ; Set PPID to 1
+        lda     #1
+        sta     a:Process::ppid,y
+skip:
+        ; Go to next process in table, and end if end of table
+        inx
+        inx
+        cpx     #PROC_NUM * 2
+        blt     child_ppid_loop
+
+        ; TODO: Release resources
+
+        dec     disable_scheduler
+
+        restore_frame
+        rts
+.endproc
+
+; void destroy_proc(int pid)
+.proc destroy_proc
+        setup_frame
+        rep     #$30
+
+        inc     disable_scheduler
+
+        ; Load PID to destroy
+        lda     z:3
+
+        ; Get address of process struct into X
+        asl
+        tax
+        lda     proc_table,x
+        tax
 
         ; Get the next of the process to be destroyed and push to stack
         lda     a:Process::next,x
@@ -578,8 +645,6 @@ found_prev:
         ply
 
         ; The process to be removed has now been removed from the execution chain
-        
-        ; TODO: Release resources
 
         ; Store struct address for use by free
         phx

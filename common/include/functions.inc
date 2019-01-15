@@ -1,3 +1,13 @@
+.charmap    $30, $30
+.charmap    $31, $31
+.charmap    $32, $32
+.charmap    $33, $33
+.charmap    $34, $34
+.charmap    $35, $35
+.charmap    $36, $36
+.charmap    $37, $37
+.charmap    $38, $38
+.charmap    $39, $39
 .charmap    $41, $41
 .charmap    $42, $42
 .charmap    $43, $43

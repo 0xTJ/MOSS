@@ -1,5 +1,9 @@
 PROC_MAX_FILES = 4
 
+PROCESS_CREATED = 0
+PROCESS_READY = 1
+PROCESS_TERMINATED = 2
+
 .struct Process
         reg_c   .word
         reg_db  .byte
@@ -12,7 +16,8 @@ PROC_MAX_FILES = 4
         pid     .word
         ppid    .word
 
-        running .word
+        state   .word
+        
         next    .addr
 
         skp_sav .word
@@ -27,6 +32,10 @@ PROC_MAX_FILES = 4
 ; The current process's data will still be accesses and modified.
 ; Disable interrupts when modifying the current process.
 .global disable_scheduler
+; void print_process(struct Process *proc)
+.global print_process
+; void dump_process_table(void)
+.global dump_process_table
 ; struct Process *clone_current_proc()
 ; Properly setting SP must be managed by calling function.
 ; Set to not running.
@@ -40,5 +49,7 @@ PROC_MAX_FILES = 4
 .global create_proc
 ; struct Process *find_previous_proc(struct Process *proc)
 .global find_previous_proc
+; void term_proc(int pid)
+.global term_proc
 ; void destroy_proc(int pid)
 .global destroy_proc
