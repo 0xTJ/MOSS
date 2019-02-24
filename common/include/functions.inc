@@ -61,21 +61,6 @@
 .charmap    $79, $79
 .charmap    $7A, $7A
 
-.macro safe_brk
-        ; Fix ROM functions not allowing D != 0
-        php
-        phd
-        pea     $0000
-        pld
-
-        brk
-        nop
-
-        ; Restore D
-        pld
-        plp
-.endmacro
-
 .macro setup_frame
         rep     #$30
         ; Store D on stack and set new stack frame

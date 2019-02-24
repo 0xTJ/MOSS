@@ -20,49 +20,35 @@
 
 .code
 
-; void install_user_vector(void * far user_vector_loc, void (*vector_isr)(void) far) far
-; .proc install_user_vector_jsr_abs
-        ; rep     #$30
-
-        ; lda     #$5C ; JMP far
-        ; ldy     #0
-        ; sta     (3,s),y
-
-        ; lda     5,s
-        ; ldy     #1
-        ; sta     (3,s),y
-
-        ; rts
-; .endproc
+.global test_str
+test_str:
+.asciiz "test"
 
 .proc setup_systick_timer
-        ; Disable T2
         sep     #$20
-        lda     TER
-        lda     #0
-        and     #.lobyte(~(1 << 2))
-        sta     TER
+
+        ; Disable T2
+        lda     #1 << 2
+        trb     TER
 
         ; Clear pending T2 interrupt
         lda     #1 << 2
         sta     TIFR
 
-        ; Enable T2 interrupt
-        lda     TIER
-        ora     #1 << 2
-        sta     TIER
-
         ; Load T2 values
-        T2Freq  = 100
+        T2Freq  = 2
         lda     #.lobyte((F_CLK / 16) / T2Freq)
         sta     T2CL
         lda     #.hibyte((F_CLK / 16) / T2Freq)
         sta     T2CH
 
+        ; Enable T2 interrupt
+        lda     #1 << 2
+        tsb     TIER
+
         ; Enable T2
-        lda     TER
-        ora     #1 << 2
-        sta     TER
+        lda     #1 << 2
+        tsb     TER
 
         rts
 .endproc
@@ -71,48 +57,42 @@
 .proc main
         rep     #$30
 
-        lda     BCR
-        ora     #$80
-        sta     BCR
-        
         ; Load T2 vector
-        ; pea     sys_tick
-        ; pea     UNIRQT2
-        ; jsr     install_user_vector_jsr_abs
-        ; rep     #$30
-        ; ply
-        ; ply
         lda     #sys_tick
         sta     NAT_IRQT2
 
         ; Load COP vector
-        ; pea     sys_call
-        ; pea     COPIRQ
-        ; jsr     install_user_vector_jsr_abs
-        ; rep     #$30
-        ; ply
-        ; ply
         lda     #sys_call
         sta     NAT_IRQCOP
 
-        ; Show P7 on LEDS
-        stz     PCS7
+        cli
 
         ; Setup system tick timer
-        jsr     setup_systick_timer
+        ; jsr     setup_systick_timer
 
         ; Start running process 1
+        ; pea     0
+        ; pea     0
+        ; pea     $7fff
+        ; pea     user
+        ; jsr     clone
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
+        ; ply
+
         pea     0
+        pea     4
+        pea     test_str
         pea     0
-        pea     $7fff
-        pea     user
-        jsr     clone
-        rep     #$30
-        ply
-        ply
-        ply
-        ply
+.import dev_ttyS0_write
+        jsr     dev_ttyS0_write
 
 loop:
+        sep     #$20
+        lda     PD7
+        inc
+        sta     PD7
         bra     loop
 .endproc

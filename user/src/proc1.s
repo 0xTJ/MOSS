@@ -69,4 +69,4 @@ loop:
 dev_ttyS0_path:
         .asciiz "/dev/ttyS0"
 init_welcome_string:
-        .byte $D, "Welcome to the init process of MOSS!", $D, 0
+        .byte "Welcome to the init process of MOSS!", $D, 0

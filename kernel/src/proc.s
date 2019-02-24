@@ -122,7 +122,6 @@ loop:
         phx
         pha
 
-        ; safe_brk
         pea     sep_str
         jsr     puts
         rep     #$30
