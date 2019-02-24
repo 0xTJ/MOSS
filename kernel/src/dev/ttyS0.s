@@ -27,25 +27,31 @@ ttyS0_name:
 rx_buff_length = $100
 tx_buff_length = $100
 
+.global rx_buff
 rx_buff:
         .res    rx_buff_length
+.global tx_buff
 tx_buff:
         .res    tx_buff_length
-        
-empty_tx_buff:
-        .res    1
 
 .data
 
 ; Tail of these buffers is the address of the next item to be added
+.global rx_head
 rx_head:
         .word   0
+.global rx_tail
 rx_tail:
         .word   0
+.global tx_head
 tx_head:
         .word   0
+.global tx_tail
 tx_tail:
         .word   0
+
+empty_tx_buff:
+        .byte   1
 
 .code
 
@@ -56,8 +62,13 @@ tx_tail:
         sep     #$20
         rep     #$10
 
-        ; Read serial data register
-        lda     ARTD3
+        ; Clear interrupt
+        lda     #$40
+        sta     UIFR
+
+        ; Check ACSR3 for interrupt source
+        lda     ACSR3
+        and     #1 << 1
 
         ; Load tail of RX buffer
         ldx     rx_tail
@@ -69,14 +80,14 @@ tx_tail:
         ldx     #0
 skip_wrap_buff:
 
-        ; Store byte to buffer at tail
-        sta     a:rx_buff,x
-
         ; Compare incremented tail to head
         ; If equal, buffer is full, exit without saving new tail
         ; If buffer is full, new byte is discarded
         cpx     rx_head
         beq     done
+
+        ; Store byte to buffer at tail
+        sta     a:rx_buff,x
 
         ; Update RX buffer tail
         stx     rx_tail
@@ -89,22 +100,39 @@ done:
 .interruptor UART3_trans
 .proc UART3_trans
         enter_isr
-        
+
         sep     #$20
         rep     #$10
 
+        ; Clear UART3T interrupt
+        lda     #$80
+        sta     UIFR
+        
+        ; Skip enabling transmitter if already enabled
+        lda     ACSR3
+        bit     #(1 << 0)
+        bnz     skip_enabling_transmitter
+        
+        ; Enable transmitter
+        lda     #(1 << 0)
+        tsb     ACSR3
+        
+skip_enabling_transmitter:
+        
+        ; Set empty data register interrupt
+        lda     #(1 << 1)
+        trb     ACSR3
+        
         ; Load head of TX buffer
         ldx     tx_head
 
         ; Compare head to tail and exit if empty buffer
         cpx     tx_tail
         beq     empty_buffer
-        
-        stz     empty_tx_buff
 
         ; Load byte to send from head
         lda     a:tx_buff,x
-        
+
         ; Write byte to serial data
         sta     ARTD3
 
@@ -115,33 +143,107 @@ done:
         ldx     #0
 skip_wrap_buff:
 
-        ; Update TX buffer head unconditionally
+        ; Update TX buffer head
         stx     tx_head
 
 done:
+        ; Return
         exit_isr
         rti
-        
+
 empty_buffer:
-        ; Get here if we tried to transmit on an empty buffer.
-        ; After this, we will need to manually transmit the next byte.
-        lda     #1
-        sta     empty_tx_buff
+        ; Check if already in shutdown mode
+        lda     ACSR3
+        bit     #1 << 1
+        bnz     turn_off
+
+        ; Set shutdown mode
+        lda     #1 << 1
+        tsb     ACSR3
+        bra     done
+        
+turn_off:
+        ; Set TX3 pin high
+        lda     #1 << 7
+        tsb     PD6
+        
+        ; Disable TX on UART3
+        lda     #(1 << 1) | (1 << 0)
+        trb     ACSR3
         bra     done
 .endproc
 
 .constructor dev_ttyS0_init
 .proc dev_ttyS0_init
+        sep     #$20
+
+        ; Setup Timer 3
+
+        ; Disable T3
+        lda     #1 << 3
+        trb     TER
+
+        ; Disable T3 interrupt
+        lda     #1 << 3
+        trb     TIER
+
+        ; Clear pending T3 interrupt
+        lda     #1 << 3
+        sta     TIFR
+
+        ; Load T3 latch and counter values
+        lda     #.lobyte($0017)
+        sta     T3LL
+        lda     #.hibyte($0017)
+        sta     T3CH
+
+        ; Enable T3
+        lda     #1 << 3
+        tsb     TER
+
+        ; Setup UART 3
+
+        ; Set UART3 timer to T3
+        lda     #1 << 7
+        trb     TCR
+
+        rep     #$20
+
+        ; Setup interrupt vectors
+        lda     #UART3_recv
+        sta     NAT_IRQAR3
+        lda     #UART3_trans
+        sta     NAT_IRQAT3
+
+        sep     #$20
+
+        ; Clear input buffer
+        lda     ARTD3
+
+        ; Enable UART3 RX interrupt
+        lda     #1 << 6
+        ; tsb     UIER
+
+        ; Set TX Enable, 8-bit, RX Enable
+        lda     #$25
+        sta     ACSR3
+
+        ; Setup device driver
+
         rep     #$30
 
+        ; Load driver struct address to X
         ldx     #ttyS0_driver
 
+        ; Write read function pointer to driver struct
         lda     #dev_ttyS0_read
         sta     a:CharDriver::read,x
 
+        ; Write write function pointer to driver struct
         lda     #dev_ttyS0_write
         sta     a:CharDriver::write,x
 
+        ; Register driver with kernel
         pea     DEV_TYPE_CHAR
         pea     ttyS0_name
         pea     ttyS0_driver
@@ -150,11 +252,6 @@ empty_buffer:
         ply
         ply
         ply
-        
-        lda     #UART3_recv
-        sta     NAT_IRQAR3
-        lda     #UART3_trans
-        sta     NAT_IRQAT3
 
         rts
 .endproc
@@ -162,11 +259,10 @@ empty_buffer:
 ; ssize_t dev_ttyS0_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
 .proc dev_ttyS0_read
         setup_frame
-        rep     #$30
+        rep     #$10
+        sep     #$20
 
         ldy     z:7 ; nbytes
-
-        sep     #$20
 
 loop:
         cpy     #0
@@ -196,7 +292,9 @@ skip_wrap_buff:
         sta     (5) ; *buf
 
         ; Increment buffer pointer and decrement number of bytes
-        inc     z:5 ; buf
+        ldx     z:5 ; buf
+        inx
+        sta     z:5 ; buf
         dey
 
         bra     loop
@@ -211,24 +309,26 @@ done_loop:
 .endproc
 
 ; ssize_t dev_ttyS0_write(struct CharDriver *device, const void *buf, size_t nbytes, off_t offset)
+.global dev_ttyS0_write
 .proc dev_ttyS0_write
         setup_frame
-        rep     #$30
-
-        ldx     z:5 ; buf
-        ldy     z:7 ; nbytes
-
+        
+        rep     #$10
         sep     #$20
+
+        ldy     z:7 ; nbytes
 
 loop:
         cpy     #0
         beq     done_loop
 
+        ; Load a byte from input buffer
+        ldx     z:5
+        lda     a:0,x
+        ; lda     (5) ; *buf
+
         ; Load tail of TX buffer
         ldx     tx_tail
-
-        ; Load a byte from input buffer
-        lda     (5) ; *buf
 
         ; Store byte to buffer at tail
         sta     a:tx_buff,x
@@ -249,30 +349,23 @@ skip_wrap_buff:
         ; Update TX buffer tail
         stx     tx_tail
 
-        ; Increment buffer pointer and decrement number of bytes
-        inc     z:5 ; buf
+        ; Increment buffer index and decrement number of bytes
+        ldx     z:5 ; buf
+        inx
+        stx     z:5 ; buf
         dey
-        
-        ; If the TX buffer was completely emptied,
-        ; have to bootstrap transmission
-        lda     empty_tx_buff
-        bze     skip_bootstrap_transmit
-        
-        ; Emulate IRQ for UART3 transmit
-        lda     #.bankbyte(skip_bootstrap_transmit)
-        pha
-        pea     skip_bootstrap_transmit
-        php
-        jmp     UART3_trans
-        
-skip_bootstrap_transmit:
+
+        ; Bootstrap transmission by enabling UART3T interrupt
+        lda     #1 << 7
+        tsb     UIER
+
         bra     loop
 
 done_loop:
 
         rep     #$30
         lda     z:7 ; nbytes
-
+        
         restore_frame
         rts
 .endproc
