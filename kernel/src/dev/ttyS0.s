@@ -107,22 +107,19 @@ done:
         ; Clear UART3T interrupt
         lda     #$80
         sta     UIFR
-        
-        ; Skip enabling transmitter if already enabled
+
+        ; Enable transmitter, if needed
         lda     ACSR3
         bit     #(1 << 0)
         bnz     skip_enabling_transmitter
-        
-        ; Enable transmitter
         lda     #(1 << 0)
         tsb     ACSR3
-        
 skip_enabling_transmitter:
-        
+
         ; Set empty data register interrupt
         lda     #(1 << 1)
         trb     ACSR3
-        
+
         ; Load head of TX buffer
         ldx     tx_head
 
@@ -161,12 +158,12 @@ empty_buffer:
         lda     #1 << 1
         tsb     ACSR3
         bra     done
-        
+
 turn_off:
         ; Set TX3 pin high
         lda     #1 << 7
         tsb     PD6
-        
+
         ; Disable TX on UART3
         lda     #(1 << 1) | (1 << 0)
         trb     ACSR3
@@ -224,8 +221,8 @@ turn_off:
         lda     #1 << 6
         ; tsb     UIER
 
-        ; Set TX Enable, 8-bit, RX Enable
-        lda     #$25
+        ; Set 8-bit, RX Enable
+        lda     #$24
         sta     ACSR3
 
         ; Setup device driver
@@ -312,7 +309,7 @@ done_loop:
 .global dev_ttyS0_write
 .proc dev_ttyS0_write
         setup_frame
-        
+
         rep     #$10
         sep     #$20
 
@@ -355,9 +352,13 @@ skip_wrap_buff:
         stx     z:5 ; buf
         dey
 
-        ; Bootstrap transmission by enabling UART3T interrupt
-        lda     #1 << 7
-        tsb     UIER
+        ; Bootstrap transmission by enabling transmitter, if needed
+        lda     ACSR3
+        bit     #(1 << 0)
+        bnz     skip_enabling_transmitter
+        lda     #(1 << 0)
+        tsb     ACSR3
+skip_enabling_transmitter:
 
         bra     loop
 
@@ -365,7 +366,7 @@ done_loop:
 
         rep     #$30
         lda     z:7 ; nbytes
-        
+
         restore_frame
         rts
 .endproc
