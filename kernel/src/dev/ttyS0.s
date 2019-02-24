@@ -66,10 +66,11 @@ empty_tx_buff:
         lda     #$40
         sta     UIFR
 
-        ; Check ACSR3 for interrupt source
-        lda     ACSR3
-        and     #1 << 1
-
+        ; Read serial byte
+        lda     ARTD3
+        
+        sta     PD7
+        
         ; Load tail of RX buffer
         ldx     rx_tail
 
@@ -217,9 +218,9 @@ turn_off:
         ; Clear input buffer
         lda     ARTD3
 
-        ; Enable UART3 RX interrupt
-        lda     #1 << 6
-        ; tsb     UIER
+        ; Enable UART3 TX and RX interrupts
+        lda     #(1 << 7) | (1 << 6)
+        tsb     UIER
 
         ; Set 8-bit, RX Enable
         lda     #$24

@@ -9,6 +9,8 @@
 .endmacro
 
 .macro exit_isr
+        rep     #$30
+        
         plb
         pld
         ply

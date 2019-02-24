@@ -81,18 +81,24 @@ test_str:
         ; ply
         ; ply
         ; ply
+.import dev_ttyS0_write
 
         pea     0
         pea     4
         pea     test_str
         pea     0
-.import dev_ttyS0_write
+        jsr     dev_ttyS0_write
+        pea     0
+        pea     4
+        pea     test_str
+        pea     0
+        jsr     dev_ttyS0_write
+        pea     0
+        pea     4
+        pea     test_str
+        pea     0
         jsr     dev_ttyS0_write
 
 loop:
-        sep     #$20
-        lda     PD7
-        inc
-        sta     PD7
         bra     loop
 .endproc
