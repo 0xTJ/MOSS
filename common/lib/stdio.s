@@ -43,13 +43,12 @@
         lda     z:3 ; s
         pha         ; s
         pea     1   ; stdout
-
         jsr     write
         rep     #$30
         ply
         ply
         ply
-        
+
         pea     a:10    ; NL
         jsr     putchar
         rep     #$30

@@ -10,6 +10,7 @@
 .include "w65c265s.inc"
 .include "isr.inc"
 .include "stdio.inc"
+.include "errcode.inc"
 
 PROC_NUM = 8
 
@@ -45,6 +46,14 @@ ppid_str:
         .asciiz "PPID:"
 state_str:
         .asciiz "State:"
+this_struct_p_str:
+        .asciiz "This Struct Pointer:"
+next_struct_p_str:
+        .asciiz "Next Struct Pointer:"
+stack_p_str:
+        .asciiz "Stack Pointer:"
+prg_cnt_str:
+        .asciiz "Program Counter:"
 
 .popseg
 
@@ -103,6 +112,73 @@ state_str:
 
         ply
         ply
+        pea     16
+        pea     tmp_string
+        
+        pea     stack_p_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:3 ; proc
+        lda     a:Process::stack_p,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
+        ; pea     this_struct_p_str
+        ; jsr     puts
+        ; rep     #$30
+        ; ply
+        ; lda     z:3 ; proc
+        ; pha
+        ; jsr     itoa
+        ; rep     #$30
+        ; ply
+        ; pha
+        ; jsr     puts
+        ; rep     #$30
+        ; ply
+        
+        ; pea     next_struct_p_str
+        ; jsr     puts
+        ; rep     #$30
+        ; ply
+        ; ldx     z:3 ; proc
+        ; lda     a:Process::next,x
+        ; pha
+        ; jsr     itoa
+        ; rep     #$30
+        ; ply
+        ; pha
+        ; jsr     puts
+        ; rep     #$30
+        ; ply
+        
+        pea     prg_cnt_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:3 ; proc
+        lda     a:Process::stack_p,x
+        tax
+        dex     ; Get base of ISR frame
+        lda     a:ISRFrame::prg_bnk,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+
+        ply
+        ply
 
         restore_frame
         rts
@@ -113,7 +189,7 @@ state_str:
         rep     #$30
 
         ldx     #0
-        
+
         inc     disable_scheduler
 
 loop:
@@ -141,7 +217,7 @@ skip:
         jsr     puts
         rep     #$30
         ply
-        
+
         dec     disable_scheduler
 
         rts
@@ -156,20 +232,21 @@ skip:
         rep     #$30
         ply
 
-        ; TODO: check for success of malloc
+        cmp     #$0000
+        beq     failed
 
         sta     proc_table + 0
         sta     current_process_p
 
         tax
         sta     a:Process::next,x
-        
+
         stz     a:Process::pid,x
         stz     a:Process::ppid,x
-        
+
         lda     #PROCESS_READY
         sta     a:Process::state,x
-        
+
         stz     a:Process::skp_sav,x
 
         pea     .sizeof(Process::files_p)
@@ -185,17 +262,31 @@ skip:
 
         stz     disable_scheduler
 
+done:
         rts
+        
+failed:
+        pea     ERRCODE_INIT_PROC
+        jsr     error_code
+        rep     #$30
+        pla
+        bra     done
 .endproc
 
+; Get next process's saved stack pointer.
 .proc scheduler
         rep     #$30
 
-        lda     disable_scheduler
+        ; If scheduler is disabled, return with current stack pointer.
+        ldx     disable_scheduler
         bnz     done
 
+        ; Load current processor struct to X.
         ldx     current_process_p
 
+        ; Save SP for current process
+        sta     a:Process::stack_p,x
+        
 loop_scheduling:
         lda     a:Process::next,x
         tax
@@ -214,6 +305,9 @@ commit_scheduling:
         sta     PD7
         rep     #$20
 
+        ; Load SP for new process
+        lda     a:Process::stack_p,x
+
 done:
         rts
 .endproc
@@ -222,12 +316,17 @@ done:
 .proc sys_tick
         enter_isr
 
-        ; Clear interrupt
         sep     #$20
+
+        ; Clear interrupt
         lda     #1 << 2
         sta     TIFR
 
+        rep     #$30
+        
+        tsc
         jsr     scheduler
+        tcs
 
         exit_isr
         rti
@@ -240,10 +339,8 @@ done:
         rep     #$30
 
         ; Disable interrupts to safely modify current process
+        php
         sei
-
-        ; Lock scheduler mutex for clarity
-        inc     disable_scheduler
 
         ; Get new process handle
         jsr     create_proc
@@ -252,6 +349,7 @@ done:
         cmp     #0
         beq     failed
 
+        ; Copy processor struct pointer to X
         tax
 
         ; Save PID and next for later
@@ -260,7 +358,7 @@ done:
         ldy     a:Process::next,x
         phy
 
-        ; Save process struct for later
+        ; Save process struct pointer for later
         phx
 
         ; Load current process struct
@@ -268,15 +366,15 @@ done:
 
         ; Copy process info
         pea     .sizeof(Process)
-        phx
-        pha
+        phx     ; Current process struct pointer
+        pha     ; New process struct pointer
         jsr     memcpy
         rep     #$30
         ply
         ply
         ply
 
-        ; Restore new process struct
+        ; Restore new process struct pointer
         plx
 
         ; Restore PID and next
@@ -287,8 +385,9 @@ done:
         pla
         sta     a:Process::pid,x
 
-        ; Reset SP
-        stz     a:Process::reg_sp,x
+        ; Reset SP to arbitrary value
+        lda     #$DEAD
+        sta     a:Process::stack_p,x
 
         ; Set to not running
         lda     #PROCESS_CREATED
@@ -297,11 +396,8 @@ done:
         txa
 
 done:
-        ; Unlock scheduler mutex
-        dec     disable_scheduler
-
-        ; Enable interrupts
-        cli
+        ; Enable interrupts if they were disabled
+        plp
 
         rts
 
@@ -321,42 +417,27 @@ failed:
         ; Lock scheduler mutex for clarity
         inc     disable_scheduler
 
-        ; Load current process
-        ldx     current_process_p
-
-        ; Store some registers in struct
-        stz     a:Process::reg_c,x
-        stz     a:Process::reg_d,x
-        stz     a:Process::reg_x,x
-        stz     a:Process::reg_y,x
-        sep     #$20
-        stz     a:Process::reg_db,x
-        stz     a:Process::bit_e,x
-        rep     #$20
-
-        ; Get address to store initial PC
-        ldx     z:3 ; initial_sp
-        dex
-        dex
-        dex
-        dex
+        ; Get address to store initial stack in X
+        lda     z:3 ; initial_sp
+        sub     #.sizeof(ISRFrame)
+        tax
 
         ; Store flags and program bank
         sep     #$20
-        stz     a:1,x
-        stz     a:4,x
+        stz     a:ISRFrame::prg_bnk,x
+        stz     a:ISRFrame::p_reg,x
         rep     #$20
 
         ; Store initial PC on process's stack
         lda     z:5     ; initial_pc
-        sta     a:2,x   ; Store PC on process's stack
+        sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
 
         ; Put process's SP in A and struct pointer in X
         txa
         ldx     current_process_p
 
         ; Store process's SP in struct
-        sta     a:Process::reg_sp,x
+        sta     a:Process::stack_p,x
 
         ; Set not saving state
         lda     #1
@@ -380,31 +461,30 @@ loop:
         ; Lock scheduler mutex
         inc     disable_scheduler
 
-        ldx     z:3
+        ; Get address to store initial stack + 1 in X
+        lda     z:5 ; initial_sp
+        sub     #.sizeof(ISRFrame) - 1
+        tax
 
-        ; Get address to store initial PC
-        ldx     z:5 ; initial_sp
-        dex
-        dex
-        dex
-        dex
-
-        ; Store flags and program bank
+        ; Reset values
         sep     #$20
-        stz     a:1,x
-        stz     a:4,x
+        stz     a:ISRFrame::prg_bnk,x
+        stz     a:ISRFrame::p_reg,x
+        stz     a:ISRFrame::dat_bnk,x
         rep     #$20
+        stz     a:ISRFrame::dir_pag,x
 
         ; Store initial PC on process's stack
-        lda     z:7 ; initial_pc
-        sta     a:2,x   ; Store PC on process's stack
-
+        lda     z:7     ; initial_pc
+        sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
+        
         ; Put process's SP in A and struct pointer in X
         txa
         ldx     z:3
 
         ; Store process's SP in struct
-        sta     a:Process::reg_sp,x
+        dec
+        sta     a:Process::stack_p,x
 
         ; Reset not saving state
         stz     a:Process::skp_sav,x
@@ -482,16 +562,6 @@ found_empty_proc:   ; X contains new PID * 2
         ; Mark as not yet running
         lda     #PROCESS_CREATED
         sta     a:Process::state,x
-
-        ; Reset registers in struct
-        stz     a:Process::reg_c,x
-        stz     a:Process::reg_d,x
-        stz     a:Process::reg_x,x
-        stz     a:Process::reg_y,x
-        sep     #$20
-        stz     a:Process::reg_db,x
-        stz     a:Process::bit_e,x
-        rep     #$20
 
         ; Store X and Y
         phx

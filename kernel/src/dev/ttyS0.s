@@ -65,7 +65,15 @@ tx_tail:
         ; Read serial byte
         lda     ARTD3
         
-        sta     PD7
+        cmp     #$72
+        bne     no_reset
+        
+        lda     #$80
+        trb     BCR
+        
+        jmp     (NAT_IRQBRK)
+        
+no_reset:
         
         ; Load tail of RX buffer
         ldx     rx_tail
@@ -317,9 +325,7 @@ loop:
         beq     done_loop
 
         ; Load a byte from input buffer
-        ldx     z:5
-        lda     a:0,x
-        ; lda     (5) ; *buf
+        lda     (5) ; *buf
 
         ; Load tail of TX buffer
         ldx     tx_tail

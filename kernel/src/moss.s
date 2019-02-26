@@ -10,6 +10,8 @@
 .include "mensch.inc"
 .include "w65c265s.inc"
 .include "syscall.inc"
+.include "stdio.inc"
+.include "errcode.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
@@ -36,7 +38,7 @@ test_str:
         sta     TIFR
 
         ; Load T2 values
-        T2Freq  = 2
+        T2Freq  = 10
         lda     #.lobyte((F_CLK / 16) / T2Freq)
         sta     T2CL
         lda     #.hibyte((F_CLK / 16) / T2Freq)
@@ -81,7 +83,7 @@ test_str:
         ply
         ply
         ply
-        
+
 loop:
         bra     loop
 .endproc

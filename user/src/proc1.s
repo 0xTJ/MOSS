@@ -60,6 +60,8 @@
         ply
         ply
 
+        cop    2
+
 loop:
         bra     loop
 .endproc
@@ -69,4 +71,4 @@ loop:
 dev_ttyS0_path:
         .asciiz "/dev/ttyS0"
 init_welcome_string:
-        .byte "Welcome to the init process of MOSS!", $D, 0
+        .byte $0D, "Welcome to the init process of MOSS!", $0D, $0A, $00
