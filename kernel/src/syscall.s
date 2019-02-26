@@ -10,6 +10,7 @@
 .include "unistd.inc"
 .include "sched.inc"
 .include "fcntl.inc"
+.include "dump_process_table.inc"
 .include "w65c265s.inc"
 
 .macro syscall sc_proc, arg_count

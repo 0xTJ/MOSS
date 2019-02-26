@@ -1,5 +1,7 @@
 PROC_MAX_FILES = 4
 
+PROC_NUM = 8
+
 PROCESS_CREATED = 0
 PROCESS_READY = 1
 PROCESS_TERMINATED = 2
@@ -26,10 +28,6 @@ PROCESS_TERMINATED = 2
 ; The current process's data will still be accesses and modified.
 ; Disable interrupts when modifying the current process.
 .global disable_scheduler
-; void print_process(struct Process *proc)
-.global print_process
-; void dump_process_table(void)
-.global dump_process_table
 ; struct Process *clone_current_proc()
 ; Properly setting SP must be managed by calling function.
 ; Set to not running.

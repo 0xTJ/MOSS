@@ -22,10 +22,6 @@
 
 .code
 
-.global test_str
-test_str:
-.asciiz "test"
-
 .proc setup_systick_timer
         sep     #$20
 

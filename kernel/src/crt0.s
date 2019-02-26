@@ -29,7 +29,7 @@ init:
         sep     #$20
 
         ; Use external memory
-        lda     #$81
+        lda     #(1 << 7)
         tsb     BCR
 
         ; Clear timers and interrupt enables

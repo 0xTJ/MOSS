@@ -17,23 +17,13 @@ tmp_buff:
 .export proc2
 .proc proc2
 loop:
-        pea     1
-        pea     tmp_buff
-        pea     0
-        jsr     read
+        jsr     getchar
         rep     #$30
-        ply
-        ply
-        ply
         
-        pea     1
-        pea     tmp_buff
-        pea     1
-        jsr     write
+        pha
+        jsr     putchar
         rep     #$30
-        ply
-        ply
-        ply
+        pla
         
         bra     loop
 .endproc

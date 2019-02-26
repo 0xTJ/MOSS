@@ -60,8 +60,6 @@
         ply
         ply
 
-        cop    2
-
 loop:
         bra     loop
 .endproc

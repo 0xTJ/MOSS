@@ -64,38 +64,37 @@ tx_tail:
 
         ; Read serial byte
         lda     ARTD3
-        
-        cmp     #$72
+
+        ; If received char is ESC, reset system
+        cmp     #$1B
         bne     no_reset
-        
-        lda     #$80
-        trb     BCR
-        
-        jmp     (NAT_IRQBRK)
-        
+        hard_reset
 no_reset:
-        
+
         ; Load tail of RX buffer
         ldx     rx_tail
+        
+        ; Transfer tail to Y
+        txy
 
         ; Increment tail position in RX buffer
-        inx
-        cpx     #rx_buff_length
+        iny
+        cpy     #rx_buff_length
         blt     skip_wrap_buff
-        ldx     #0
+        ldy     #0
 skip_wrap_buff:
 
         ; Compare incremented tail to head
         ; If equal, buffer is full, exit without saving new tail
         ; If buffer is full, new byte is discarded
-        cpx     rx_head
+        cpy     rx_head
         beq     done
 
         ; Store byte to buffer at tail
         sta     a:rx_buff,x
 
         ; Update RX buffer tail
-        stx     rx_tail
+        sty     rx_tail
 
 done:
         exit_isr
@@ -151,7 +150,7 @@ done:
 
 empty_buffer:
         sep     #$20
-        
+
         ; Branch to turn_off if already in shutdown mode
         lda     ACSR3
         and     #(1 << 1)
@@ -160,7 +159,7 @@ empty_buffer:
         ; Set shutdown mode
         lda     #(1 << 1)
         tsb     ACSR3
-        
+
         bra     done
 
 turn_off:
@@ -171,7 +170,7 @@ turn_off:
         ; Disable TX on UART3
         lda     #(1 << 0)
         trb     ACSR3
-        
+
         bra     done
 .endproc
 

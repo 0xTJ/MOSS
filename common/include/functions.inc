@@ -92,3 +92,24 @@
         tya
 .endif
 .endmacro
+
+.macro hard_reset
+        sei
+        
+        sep     #$20
+        
+        lda     #$01
+        sta     T3LL
+        stz     T3CH
+        
+        lda     #(1 << 4)
+        tsb     BCR
+        
+        lda     #(1 << 0)
+        trb     TER
+        tsb     TER
+        
+        .local loop_waiting
+loop_waiting:
+        bra     loop_waiting
+.endmacro
