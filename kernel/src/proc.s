@@ -163,11 +163,14 @@ skip:
 
         tax
         sta     a:Process::next,x
-        lda     #0
-        sta     a:Process::pid,x
-        sta     a:Process::ppid,x
+        
+        stz     a:Process::pid,x
+        stz     a:Process::ppid,x
+        
         lda     #PROCESS_READY
         sta     a:Process::state,x
+        
+        stz     a:Process::skp_sav,x
 
         pea     .sizeof(Process::files_p)
         pea     0

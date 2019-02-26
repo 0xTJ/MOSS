@@ -68,37 +68,20 @@ test_str:
         cli
 
         ; Setup system tick timer
-        ; jsr     setup_systick_timer
+        jsr     setup_systick_timer
 
         ; Start running process 1
-        ; pea     0
-        ; pea     0
-        ; pea     $7fff
-        ; pea     user
-        ; jsr     clone
-        ; rep     #$30
-        ; ply
-        ; ply
-        ; ply
-        ; ply
-.import dev_ttyS0_write
-
         pea     0
-        pea     4
-        pea     test_str
         pea     0
-        jsr     dev_ttyS0_write
-        pea     0
-        pea     4
-        pea     test_str
-        pea     0
-        jsr     dev_ttyS0_write
-        pea     0
-        pea     4
-        pea     test_str
-        pea     0
-        jsr     dev_ttyS0_write
-
+        pea     $7fff
+        pea     user
+        jsr     clone
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+        
 loop:
         bra     loop
 .endproc

@@ -6,7 +6,6 @@
 .include "functions.inc"
 .include "proc.inc"
 .include "dev.inc"
-.include "mensch.inc"
 .include "w65c265s.inc"
 .include "isr.inc"
 
@@ -49,9 +48,6 @@ tx_head:
 .global tx_tail
 tx_tail:
         .word   0
-
-empty_tx_buff:
-        .byte   1
 
 .code
 
@@ -109,24 +105,20 @@ done:
         lda     #$80
         sta     UIFR
 
-        ; Enable transmitter, if needed
-        lda     ACSR3
-        bit     #(1 << 0)
-        bnz     skip_enabling_transmitter
-        lda     #(1 << 0)
-        tsb     ACSR3
-skip_enabling_transmitter:
-
-        ; Set empty data register interrupt
-        lda     #(1 << 1)
-        trb     ACSR3
-
         ; Load head of TX buffer
         ldx     tx_head
 
         ; Compare head to tail and exit if empty buffer
         cpx     tx_tail
         beq     empty_buffer
+
+        ; Enable transmitter
+        lda     #(1 << 0)
+        tsb     ACSR3
+
+        ; Set empty data register interrupt
+        lda     #(1 << 1)
+        trb     ACSR3
 
         ; Load byte to send from head
         lda     a:tx_buff,x
@@ -150,24 +142,28 @@ done:
         rti
 
 empty_buffer:
-        ; Check if already in shutdown mode
+        sep     #$20
+        
+        ; Branch to turn_off if already in shutdown mode
         lda     ACSR3
-        bit     #1 << 1
+        and     #(1 << 1)
         bnz     turn_off
 
         ; Set shutdown mode
-        lda     #1 << 1
+        lda     #(1 << 1)
         tsb     ACSR3
+        
         bra     done
 
 turn_off:
         ; Set TX3 pin high
-        lda     #1 << 7
+        lda     #(1 << 7)
         tsb     PD6
 
         ; Disable TX on UART3
-        lda     #(1 << 1) | (1 << 0)
+        lda     #(1 << 0)
         trb     ACSR3
+        
         bra     done
 .endproc
 
@@ -215,9 +211,6 @@ turn_off:
 
         sep     #$20
 
-        ; Clear input buffer
-        lda     ARTD3
-
         ; Enable UART3 TX and RX interrupts
         lda     #(1 << 7) | (1 << 6)
         tsb     UIER
@@ -225,6 +218,9 @@ turn_off:
         ; Set 8-bit, RX Enable
         lda     #$24
         sta     ACSR3
+
+        ; Clear input buffer
+        lda     ARTD3
 
         ; Setup device driver
 
@@ -353,13 +349,9 @@ skip_wrap_buff:
         stx     z:5 ; buf
         dey
 
-        ; Bootstrap transmission by enabling transmitter, if needed
-        lda     ACSR3
-        bit     #(1 << 0)
-        bnz     skip_enabling_transmitter
+        ; Bootstrap transmission by enabling transmitter
         lda     #(1 << 0)
         tsb     ACSR3
-skip_enabling_transmitter:
 
         bra     loop
 
