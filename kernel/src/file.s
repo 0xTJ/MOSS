@@ -8,7 +8,6 @@
 .include "fcntl.inc"
 .include "filesys.inc"
 .include "unistd.inc"
-.include "kio.inc"
 
 .code
 

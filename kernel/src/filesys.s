@@ -6,7 +6,6 @@
 
 .include "filesys.inc"
 .include "functions.inc"
-.include "kio.inc"
 
 .data
 
@@ -56,12 +55,6 @@ skip_first:
 .proc traverse_rel_path
         setup_frame
         rep     #$30
-
-        lda     z:5
-        pha
-        jsr     kputs
-        rep     #$30
-        ply
 
         ; Check for path being empty and jump to empty_path if it is.
         lda     z:5

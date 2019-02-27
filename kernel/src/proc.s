@@ -10,7 +10,6 @@
 .include "w65c265s.inc"
 .include "isr.inc"
 .include "stdio.inc"
-.include "kio.inc"
 .include "errcode.inc"
 
 .bss
