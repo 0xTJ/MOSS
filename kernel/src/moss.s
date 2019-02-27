@@ -12,6 +12,7 @@
 .include "syscall.inc"
 .include "stdio.inc"
 .include "errcode.inc"
+.include "kio.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.

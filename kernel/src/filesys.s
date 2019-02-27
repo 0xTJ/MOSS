@@ -6,6 +6,7 @@
 
 .include "filesys.inc"
 .include "functions.inc"
+.include "kio.inc"
 
 .data
 
@@ -56,6 +57,12 @@ skip_first:
         setup_frame
         rep     #$30
 
+        lda     z:5
+        pha
+        jsr     kputs
+        rep     #$30
+        ply
+
         ; Check for path being empty and jump to empty_path if it is.
         lda     z:5
         tax
@@ -68,9 +75,12 @@ skip_first:
         pha
         jsr     follow_mounts
         rep     #$30
-        sta     z:3
         ply
-        tax
+
+        ; Update node with followed node
+        sta     z:3
+
+        ; Check that node is a directory
         tay
         lda     a:FSNode::flags,x
         cmp     #FS_DIRECTORY
@@ -81,14 +91,14 @@ skip_first:
         tsc
         sub     #17
         tcs
+
+        ; Push address of string twice
         inc
         pha
         pha
-        ; Address of string on stack is now on stack twice
 
         ; Load path to X
-        lda     z:5
-        tax
+        ldx     z:5
 
         ; Check first char of path for '/', and ignore it in a loop
         sep     #$20
@@ -101,21 +111,30 @@ slash_loop:
 done_slash_loop:
 
 loop:
+        ; Load first character of relative path to A
         lda     a:0,x
+
+        ; If it is 0 or '/', done segment
         cmp     #0
         beq     done_segment
         cmp     #'/'
         beq     done_segment
-        inx
-        ; Is a regular character
-        txy     ; Temporarily store location in path argument in Y
-        plx     ; Load string on stack from stack to X
-        sta     a:0,x   ; Store character to string on stack
-        ; Increment string on stack pointer and store
+
+        ; Temporarily store pointer in path argument into Y
+        txy
+
+        ; Store A into string on stack, and increment pointer on stack (second pushed) to string on stack
+        plx
+        sta     a:0,x
         inx
         phx
+
         ; Transfer location in path back to X
         tyx
+
+        ; Increment pointer in path
+        inx
+
         bra     loop
 
 done_segment:
@@ -161,11 +180,13 @@ done:
 
 empty_path: ; Return passed starting node
         rep     #$30
+
         lda     z:3 ; node
         bra     done
 
 failed:
         rep     #$30
+
         lda     #0
         bra     done
 .endproc
@@ -199,6 +220,7 @@ failed:
 
 done:
         restore_frame
+
         rts
 
 failed:
