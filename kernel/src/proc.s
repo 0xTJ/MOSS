@@ -10,6 +10,7 @@
 .include "w65c265s.inc"
 .include "isr.inc"
 .include "stdio.inc"
+.include "kio.inc"
 .include "errcode.inc"
 
 .bss
@@ -69,7 +70,7 @@ disable_scheduler:
 
 done:
         rts
-        
+
 failed:
         pea     ERRCODE_INIT_PROC
         jsr     error_code
@@ -92,7 +93,7 @@ failed:
 
         ; Save SP for current process
         sta     a:Process::stack_p,x
-        
+
 loop_scheduling:
         lda     a:Process::next,x
         tax
@@ -129,7 +130,7 @@ done:
         sta     TIFR
 
         rep     #$30
-        
+
         tsc
         jsr     scheduler
         tcs
@@ -212,52 +213,6 @@ failed:
         bra     done
 .endproc
 
-; void replace_current_proc(void *initial_sp, void *initial_pc)
-.proc replace_current_proc
-        setup_frame
-        rep     #$30
-
-        ; Disable interrupts to safely modify current process
-        sei
-
-        ; Lock scheduler mutex for clarity
-        inc     disable_scheduler
-
-        ; Get address to store initial stack in X
-        lda     z:3 ; initial_sp
-        sub     #.sizeof(ISRFrame)
-        tax
-
-        ; Store flags and program bank
-        sep     #$20
-        stz     a:ISRFrame::prg_bnk,x
-        stz     a:ISRFrame::p_reg,x
-        rep     #$20
-
-        ; Store initial PC on process's stack
-        lda     z:5     ; initial_pc
-        sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
-
-        ; Put process's SP in A and struct pointer in X
-        txa
-        ldx     current_process_p
-
-        ; Store process's SP in struct
-        sta     a:Process::stack_p,x
-
-        ; Set not saving state
-        lda     #1
-        sta     a:Process::skp_sav,x
-
-        ; Unlock scheduler mutex
-        dec     disable_scheduler
-
-        ; Enable interrupts, and wait for scheduler to take over
-        cli
-loop:
-        bra     loop
-.endproc
-
 ; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
 ; Assumes Program Bank is $00
 .proc setup_proc
@@ -283,7 +238,7 @@ loop:
         ; Store initial PC on process's stack
         lda     z:7     ; initial_pc
         sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
-        
+
         ; Put process's SP in A and struct pointer in X
         txa
         ldx     z:3
