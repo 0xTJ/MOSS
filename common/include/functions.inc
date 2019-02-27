@@ -34,6 +34,7 @@
 .charmap    $58, $58
 .charmap    $59, $59
 .charmap    $5A, $5A
+.charmap    $5F, $5F
 .charmap    $61, $61
 .charmap    $62, $62
 .charmap    $63, $63
