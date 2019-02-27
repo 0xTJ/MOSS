@@ -8,6 +8,9 @@
 .include "fcntl.inc"
 .include "filesys.inc"
 .include "unistd.inc"
+.include "kio.inc"
+
+.code
 
 ; int open(const char *path, int oflag, ... )
 .proc open
@@ -70,18 +73,18 @@ failed:
         bra     done
 .endproc
 
-; ssize_t read(int fildes, void *buf, size_t nbyte)
+; ssize_t read(int fd, void *buf, size_t nbyte)
 .proc read
         setup_frame
         rep     #$30
 
-        lda     z:3 ; filedes
+        lda     z:3 ; fd
         cmp     #0
         blt     failed
         cmp     #PROC_MAX_FILES
         bge     failed
 
-        ; Put filedes * 2 + base of file table into X
+        ; Put fd * 2 + base of file table into X
         asl
         add     current_process_p
         add     #Process::files_p
@@ -113,18 +116,18 @@ failed:
         bra     done
 .endproc
 
-; ssize_t write(int fildes, const void *buf, size_t nbyte)
+; ssize_t write(int fd, const void *buf, size_t nbyte)
 .proc write
         setup_frame
         rep     #$30
 
-        lda     z:3 ; filedes
+        lda     z:3 ; fd
         cmp     #0
         blt     failed
         cmp     #PROC_MAX_FILES
         bge     failed
 
-        ; Put filedes * 2 + base of file table into X
+        ; Put fd * 2 + base of file table into X
         asl
         add     current_process_p
         add     #Process::files_p
