@@ -137,12 +137,18 @@ done_segment:
         stz     a:0,x   ; Store 0 to string on stack
         ; Intentionally don't push back the location in string on stack
 
-        ; Beginning of string on stack is already on the stack, but place location in path before it
         rep     #$30
-        pla
+        ; Pull beginning of string on stack to X
+        plx
+        ; Make stack space for FSNode
+        tsc
+        sub     #.sizeof(FSNode)
+        tcs
+        ; Push pointer in path to stack
         phy
-        pha
 
+        ; Push beginning of string on stack from X
+        phx
         ; Push starting node
         lda     z:3
         pha
