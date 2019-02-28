@@ -147,7 +147,7 @@ done:
         lda     z:7 ; n
         bze     done
         dec
-        
+
         ; Load dest and src to Y and X
         ldy     z:3 ; dest
         ldx     z:5 ; src
@@ -158,6 +158,78 @@ done:
         ; Y: dest
         ; Src and dst banks 0
         mvn     0, 0
+
+done:
+        restore_frame
+        rts
+.endproc
+
+; void *memmove(void *dest, const void *src, size_t n)
+.export memmove
+.proc memmove
+        setup_frame
+        rep     #$30
+
+        ; Done if n == 0
+        lda     z:7 ; n
+        bze     done
+
+        ; Load compare dest to src
+        lda     z:3 ; dest
+        cpa     z:5 ; src
+
+        ; If equal, we're done
+        beq     done
+
+        ; If destination is greater than source
+        bgt    copy_pos
+
+        ; If destination if less than source
+        blt     copy_neg
+
+copy_pos:
+        ; Load src + n - 1 to X
+        lda     z:5 ; src
+        add     z:7 ; n
+        dec
+        tax
+        
+        ; Load dest + n - 1 to X
+        lda     z:3 ; dest
+        add     z:7 ; n
+        dec
+        tax
+        
+        ; Load n - 1 to A
+        ldx     z:7 ; n
+        dec
+
+        ; Run mvn with:
+        ; A: n - 1
+        ; X: src + n - 1
+        ; Y: dest + n - 1
+        ; Src and dst banks 0
+        mvp     0, 0
+        bra     done
+
+copy_neg:
+        ; Load destination to Y
+        ldy     z:3 ; src
+        
+        ; Load source to X
+        ldx     z:5 ; src
+        
+        ; Load n - 1 to A
+        ldx     z:7 ; n
+        dec
+
+        ; Run mvn with:
+        ; A: n - 1
+        ; X: src
+        ; Y: dest
+        ; Src and dst banks 0
+        mvn     0, 0
+        bra     done
 
 done:
         restore_frame

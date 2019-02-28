@@ -8,3 +8,5 @@
 .global memset
 ; void *memcpy(void *dest, const void *src, size_t n)
 .global memcpy
+; void *memmove(void *dest, const void *src, size_t n)
+.global memmove
