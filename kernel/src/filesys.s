@@ -236,7 +236,7 @@ done:
 
 failed:
         rep     #$30
-        lda     #0
+        lda     #$FFFF
         bra     done
 .endproc
 

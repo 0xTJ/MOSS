@@ -38,7 +38,7 @@
         ply
         ply
 
-        cmp     #0
+        cmp     #$FFFF
         beq     failed
 
         ; Push found FSNode
