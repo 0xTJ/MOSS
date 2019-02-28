@@ -247,14 +247,21 @@ failed:
         rep     #$30
         ply
 
+        ; If it failed, return error
         cmp     #0
-        beq     done
+        beq     failed
 
+        ; Get pointer to FSNode
         add     #Device::fsnode
 
 done:
         restore_frame
         rts
+
+failed:
+        lda     #$0
+        ; lda     #$FFFF
+        bra     done
 .endproc
 
 ; void dev_init(void)
