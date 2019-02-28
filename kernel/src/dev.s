@@ -173,7 +173,7 @@ failed:
         rts
 .endproc
 
-; struct DirEnt *fs_dev_readdir(struct FSNode *node, unsigned int index)
+; int fs_dev_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_dev_readdir
         setup_frame
         rep     #$30
@@ -337,7 +337,7 @@ chardevice:
         ply
         ply
         plx     ; Restore X
-
+        
         lda     #FS_CHARDEVICE
         sta     a:Device::fsnode + FSNode::flags,x
         inc     last_dev_inode
