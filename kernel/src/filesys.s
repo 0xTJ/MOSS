@@ -138,12 +138,15 @@ done_segment:
         ; Intentionally don't push back the location in string on stack
 
         rep     #$30
+
         ; Pull beginning of string on stack to X
         plx
+
         ; Make stack space for FSNode
         tsc
         sub     #.sizeof(FSNode)
         tcs
+
         ; Push pointer in path to stack
         phy
 
@@ -158,8 +161,8 @@ done_segment:
         rep     #$30
         ply
         ply
-        
         cmp     #0
+
         beq     failed
 
         ; Location of 0 or '/' in path argument is currently on stack

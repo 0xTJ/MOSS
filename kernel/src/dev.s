@@ -246,7 +246,7 @@ failed:
         jsr     dev_from_name
         rep     #$30
         ply
-        
+
         cmp     #0
         beq     done
 
