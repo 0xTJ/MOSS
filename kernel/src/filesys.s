@@ -151,6 +151,8 @@ done_segment:
         ; Push pointer in path to stack
         phy
 
+        ; Push location of result FSNode twice
+        pha
         pha
 
         ; Push beginning of string on stack from X
@@ -171,6 +173,7 @@ done_segment:
 
         ; Location of 0 or '/' in path argument is currently on stack
         ; Push the found node
+        ply     ; Remove extra placeholder
         pha
 
         ; Call self recursively
