@@ -186,7 +186,7 @@ done:
         restore_frame
         rts
 
-empty_path: ; Return passed starting node
+empty_path:
         rep     #$30
 
         lda     z:3 ; node
