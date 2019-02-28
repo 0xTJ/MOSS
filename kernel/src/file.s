@@ -26,6 +26,9 @@
 
         ; TODO: Check for failed malloc
 
+        ; Push pointer to result FSNode for later
+        pha
+
         ; Push pointer to result FSNode for path traversal
         pha
 
@@ -41,6 +44,9 @@
         cmp     #$FFFF
         beq     failed
 
+        ; Result FSNode pointer already on stack
+        ; So pull it
+        ply
         ; Push found FSNode
         pha
 
