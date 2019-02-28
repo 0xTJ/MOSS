@@ -5,6 +5,7 @@
 
 .include "proc.inc"
 .include "functions.inc"
+.include "stdlib.inc"
 .include "fcntl.inc"
 .include "filesys.inc"
 .include "unistd.inc"
@@ -17,10 +18,21 @@
         setup_frame
         rep     #$30
 
+        ; Allocate result FSNode
+        pea     .sizeof(FSNode)
+        jsr     malloc
+        rep     #$30
+        ply
+
+        ; TODO: Check for failed malloc
+
+        ; Push pointer to result FSNode for path traversal
+        pha
         lda     z:3 ; path
         pha
         jsr     traverse_abs_path
         rep     #$30
+        ply
         ply
 
         cmp     #0

@@ -50,7 +50,8 @@ skip_first:
         rts
 .endproc
 
-; struct FSNode *traverse_rel_path(struct FSNode *node, char *path)
+; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
+; Both nodes can be the same, node is read before result is overwritten
 .export traverse_rel_path
 .proc traverse_rel_path
         setup_frame
@@ -199,14 +200,14 @@ failed:
         bra     done
 .endproc
 
-; struct FSNode *traverse_abs_path(char *path)
+; int traverse_abs_path(char *path, struct FSNode *result)
 .export traverse_abs_path
 .proc traverse_abs_path
         setup_frame
         rep     #$30
 
-        lda     z:3
-        tax
+        ; Load path to X
+        ldx     z:3
 
         ; Check first char of path for '/'
         sep     #$20

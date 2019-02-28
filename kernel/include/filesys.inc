@@ -30,9 +30,9 @@ FS_TYPE_BITS    = $0F
 
 ; struct FSNode *follow_mounts(struct FSNode *node)
 .global follow_mounts
-; struct FSNode *traverse_rel_path(struct FSNode *node, char *path)
+; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
 .global traverse_rel_path
-; struct FSNode *traverse_abs_path(char *path)
+; int traverse_abs_path(char *path, struct FSNode *result)
 .global traverse_abs_path
 ; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
 .global mount_fs
