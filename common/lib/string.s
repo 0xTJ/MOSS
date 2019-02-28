@@ -160,7 +160,6 @@ done:
         mvn     0, 0
 
 done:
-        rep    #$30
         restore_frame
         rts
 .endproc
