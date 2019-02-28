@@ -167,8 +167,8 @@ done_segment:
         ply
         ply
         ply
-        cmp     #0
 
+        cmp     #0
         beq     failed
 
         ; Location of 0 or '/' in path argument is currently on stack
