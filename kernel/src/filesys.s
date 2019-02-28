@@ -146,6 +146,10 @@ done_path_segment:
         tcs
         inc
 
+        ; Push location of result FSNode as result for recursive call
+        lda     z:7
+        pha
+
         ; Push pointer in path to stack as path for recursive call
         phy
 
