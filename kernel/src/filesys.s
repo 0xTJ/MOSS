@@ -142,10 +142,11 @@ done_segment:
         ; Pull beginning of string on stack to X
         plx
 
-        ; Make stack space for FSNode
+        ; Make stack space for FSNode and put pointer to it in A
         tsc
         sub     #.sizeof(FSNode)
         tcs
+        inc
 
         ; Push pointer in path to stack
         phy
