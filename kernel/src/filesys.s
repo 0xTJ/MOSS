@@ -172,6 +172,7 @@ done_segment:
         beq     failed
 
         ; Location of 0 or '/' in path argument is currently on stack
+        ; Found node pointer is on stack, pushed after it
         ; Push the found node
         ply     ; Remove extra placeholder
         pha
