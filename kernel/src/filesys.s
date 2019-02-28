@@ -209,7 +209,7 @@ failed:
         rep     #$30
 
         ; Push result node
-        lda     z:7
+        lda     z:5
         pha
 
         ; Load path to X
@@ -223,8 +223,10 @@ failed:
 
         rep     #$30
 
-        ; Push path string, with leading slash removed and root_dir
+        ; Push path string
         phx
+
+        ; Push root_dir
         pea     root_dir
 
         jsr     traverse_rel_path
