@@ -28,8 +28,11 @@
 
         ; Push pointer to result FSNode for path traversal
         pha
+
+        ; Push path
         lda     z:3 ; path
         pha
+
         jsr     traverse_abs_path
         rep     #$30
         ply

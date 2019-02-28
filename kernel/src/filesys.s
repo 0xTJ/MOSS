@@ -149,10 +149,12 @@ done_segment:
         tcs
         inc
 
-        ; Push pointer in path to stack
+        ; Push pointer in path to stack as path for recursive call
         phy
 
         ; Push location of result FSNode twice
+        ; Once as base for recursive call
+        ; Once for call to finddir_fs
         pha
         pha
 
