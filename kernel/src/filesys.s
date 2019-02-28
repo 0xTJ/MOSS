@@ -160,11 +160,8 @@ done_segment:
         ; Push the found node
         pha
 
-        ; Call self recursively and pull arguments
+        ; Call self recursively
         jsr     traverse_rel_path
-        rep     #$30
-        ply
-        ply
 
         ; Return with result from recursive call
 done:
