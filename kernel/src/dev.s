@@ -254,6 +254,23 @@ failed:
         ; Get pointer to FSNode
         add     #Device::fsnode
 
+        pha
+
+        ; Use memcpy to fill result
+        pea     .sizeof(FSNode)
+        pha
+        ldy     z:7 ; result
+        phy
+        jsr     memcpy
+        rep     #$30
+        ply
+        ply
+        ply
+
+        lda     #0
+
+        pla
+
 done:
         restore_frame
         rts
