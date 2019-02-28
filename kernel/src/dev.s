@@ -235,7 +235,7 @@ failed:
         bra     done
 .endproc
 
-; struct FSNode *fs_dev_finddir(struct FSNode *node, char *name)
+; int fs_dev_finddir(struct FSNode *node, char *name, struct FSNode *result)
 .proc fs_dev_finddir
         setup_frame
         rep     #$30
