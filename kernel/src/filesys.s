@@ -208,6 +208,10 @@ failed:
         setup_frame
         rep     #$30
 
+        ; Push result node
+        lda     z:7
+        pha
+
         ; Load path to X
         ldx     z:3
 
@@ -220,12 +224,12 @@ failed:
         rep     #$30
 
         ; Push path string, with leading slash removed and root_dir
-
         phx
         pea     root_dir
 
         jsr     traverse_rel_path
         rep     #$30
+        ply
         ply
         ply
 
