@@ -259,7 +259,7 @@ done:
         rts
 
 failed:
-        lda     #$0
+        lda     #$FFFF
         bra     done
 .endproc
 
