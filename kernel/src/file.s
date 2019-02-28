@@ -8,6 +8,7 @@
 .include "fcntl.inc"
 .include "filesys.inc"
 .include "unistd.inc"
+.include "dirent.inc"
 
 .code
 
@@ -153,6 +154,49 @@ failed:
 done:
         restore_frame
         rts
+failed:
+        lda     #$FFFF  ; -1
+        bra     done
+.endproc
+
+; int readdir(unsigned int fd, unsigned int count, struct DirEnt *result)
+.proc readdir
+        setup_frame
+        rep     #$30
+
+        lda     z:3 ; fd
+        cmp     #0
+        blt     failed
+        cmp     #PROC_MAX_FILES
+        bge     failed
+
+        ; Put fd * 2 + base of file table into X
+        asl
+        add     current_process_p
+        add     #Process::files_p
+        tax
+
+        ; Load address of FSNode to A
+        lda     a:0,x
+        bze     failed
+
+        ; Run read on it
+        ldx     z:5 ; dir_p
+        phx
+        ldx     z:7 ; count
+        phx
+        pha
+        jsr     readdir_fs
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
+done:
+        restore_frame
+        rts
+
 failed:
         lda     #$FFFF  ; -1
         bra     done

@@ -399,7 +399,7 @@ done:
         rts
 .endproc
 
-; struct DirEnt *readdir_fs(struct FSNode *node, unsigned int index)
+; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc readdir_fs
         setup_frame
 
@@ -413,6 +413,8 @@ done:
         bze     done
 
         ; Copy parameters onto current stack
+        lda     z:7
+        pha
         lda     z:5
         pha
         lda     z:3
@@ -425,13 +427,14 @@ done:
         rep     #$30
         ply
         ply
+        ply
 
 done:
         restore_frame
         rts
 .endproc
 
-; struct FSNode *finddir_fs(struct FSNode *node, char *name)
+; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
 .proc finddir_fs
         setup_frame
 

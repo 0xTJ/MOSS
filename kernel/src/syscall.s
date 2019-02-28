@@ -12,6 +12,7 @@
 .include "fcntl.inc"
 .include "dump_process_table.inc"
 .include "w65c265s.inc"
+.include "dirent.inc"
 
 .macro syscall sc_proc, arg_count
 .ifndef syscall_count
@@ -34,6 +35,7 @@ syscall write, 6
 syscall clone, 14
 syscall getpid, 0
 syscall getppid, 0
+syscall readdir, 6
 
 .import __SYSCALL_TABLE__
 .import __SYSCALL_COUNT__
@@ -212,4 +214,8 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_clone
         jmp     clone
+.endproc
+
+.proc sc_readdir
+        jmp     readdir
 .endproc

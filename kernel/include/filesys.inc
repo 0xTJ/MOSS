@@ -44,7 +44,7 @@ FS_TYPE_BITS    = $0F
 .global open_fs
 ; void close_fs(struct FSNode *node)
 .global close_fs
-; struct DirEnt *readdir_fs(struct FSNode *node, unsigned int index)
+; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .global readdir_fs
 ; struct FSNode *finddir_fs(struct FSNode *node, char *name)
 .global finddir_fs

@@ -55,13 +55,13 @@ dev_root_dir:
 
         ; Load devices pointer to X
         ldx     devices_list
-        
+
         bra     skip_first_loop
 
 loop:
         ldy     a:Device::next,x
         tyx
-        
+
 skip_first_loop:
         ; Check if NULL
         cpx     #0
