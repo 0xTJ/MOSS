@@ -157,6 +157,7 @@ done_segment:
 
         ; Push beginning of string on stack from X
         phx
+
         ; Push starting node
         lda     z:3
         pha
