@@ -203,29 +203,12 @@ loop:
 
 done_loop:
 
-        ; Store Device struct address to stack
-        phx
-
-        pea     .sizeof(DirEnt)
-        jsr     malloc
-        rep     #$30
-        ply
-
-        ; Check that malloc succeeded
-        cmp     #0
-        jeq     failed
-
-        ; Push new DirEnt struct address
-        pha
-
-        ; Push driver name string address
-        lda     3,s ; Device struct address
-        tax
+        ; Push driver name string pointer
         lda     a:Device::name,x
         pha
 
         ; Push destination string
-        lda     3,s ; New DirEnt struct
+        lda     z:7
         add     #DirEnt::name
         pha
 
@@ -237,7 +220,7 @@ done_loop:
         ; Write inode
         lda     1,s
         tax
-        lda     z:5
+        lda     z:7
         inc
         sta     a:DirEnt::inode,x
 
@@ -248,7 +231,7 @@ done:
         rts
 
 failed:
-        lda     #0
+        lda     #$FFFF
         bra     done
 .endproc
 
