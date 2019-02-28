@@ -240,6 +240,7 @@ failed:
         setup_frame
         rep     #$30
 
+        ; Get device pointer from name
         lda     z:5 ; name
         pha
         jsr     dev_from_name

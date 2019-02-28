@@ -445,6 +445,8 @@ done:
         bze     done
 
         ; Copy parameters onto current stack
+        lda     z:7
+        pha
         lda     z:5
         pha
         lda     z:3
@@ -455,6 +457,7 @@ done:
 
         ; Remove parameters from stack
         rep     #$30
+        ply
         ply
         ply
 
