@@ -58,28 +58,25 @@ skip_first:
         rep     #$30
 
         ; Check for path being empty and jump to empty_path if it is.
-        lda     z:5
-        tax
+        ldx     z:5
         sep     #$20
         lda     a:0,x
         jeq     empty_path
         rep     #$20
 
-        lda     z:3
+        ; User follow_mounts to update node in arguments
+        lda     z:3 ; node
         pha
         jsr     follow_mounts
         rep     #$30
         ply
-
-        ; Update node with followed node
-        sta     z:3
+        sta     z:3 ; node
 
         ; Check that node is a directory
-        tay
+        ldy     z:3 ; node
         lda     a:FSNode::flags,x
         cmp     #FS_DIRECTORY
         jne     failed
-        tya
 
         ; Make space for string on stack
         tsc
@@ -104,15 +101,15 @@ slash_loop:
         bra     slash_loop
 done_slash_loop:
 
-loop:
+path_segment_loop:
         ; Load first character of relative path to A
         lda     a:0,x
 
         ; If it is 0 or '/', done segment
         cmp     #0
-        beq     done_segment
+        beq     done_path_segment
         cmp     #'/'
-        beq     done_segment
+        beq     done_path_segment
 
         ; Temporarily store pointer in path argument into Y
         txy
@@ -129,9 +126,9 @@ loop:
         ; Increment pointer in path
         inx
 
-        bra     loop
+        bra     path_segment_loop
 
-done_segment:
+done_path_segment:
         ; Store null-terminator in string on stack
         txy     ; Store location in path argument in Y
         plx     ; Load string on stack from stack to X
@@ -220,8 +217,7 @@ failed:
         lda     a:0,x
         cmp     #'/'
         bne     failed
-
-        rep     #$30
+        rep     #$20
 
         ; Push path string
         phx
@@ -237,11 +233,10 @@ failed:
 
 done:
         restore_frame
-
         rts
 
 failed:
-        rep     #$30
+        rep     #$20
         lda     #$FFFF
         bra     done
 .endproc
