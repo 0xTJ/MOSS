@@ -337,7 +337,7 @@ chardevice:
         ply
         ply
         plx     ; Restore X
-        
+
         lda     #FS_CHARDEVICE
         sta     a:Device::fsnode + FSNode::flags,x
         inc     last_dev_inode
