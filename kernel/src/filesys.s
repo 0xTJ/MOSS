@@ -151,6 +151,8 @@ done_segment:
         ; Push pointer in path to stack
         phy
 
+        pha
+
         ; Push beginning of string on stack from X
         phx
         ; Push starting node
@@ -160,6 +162,7 @@ done_segment:
         ; Call finddir_fs and pull arguments
         jsr     finddir_fs
         rep     #$30
+        ply
         ply
         ply
         cmp     #0
