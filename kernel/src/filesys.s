@@ -6,6 +6,7 @@
 
 .include "filesys.inc"
 .include "functions.inc"
+.include "string.inc"
 
 .data
 
@@ -193,7 +194,20 @@ done:
 empty_path:
         rep     #$30
 
+        ; Move node to result
+        pea     .sizeof(FSNode)
         lda     z:3 ; node
+        pha
+        lda     z:7 ; result
+        pha
+        jsr     memmove
+        rep     #$30
+        ply
+        ply
+        ply
+
+        lda     z:3 ; node
+
         bra     done
 
 failed:
