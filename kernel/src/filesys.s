@@ -178,10 +178,6 @@ done_path_segment:
         beq     failed
 
         ; Location of 0 or '/' in path argument is currently on stack
-        ; Found node pointer is on stack, pushed after it
-        ; Push the found node
-        ply     ; Remove extra placeholder
-        pha
 
         ; Call self recursively
         jsr     traverse_rel_path
@@ -206,7 +202,8 @@ empty_path:
         ply
         ply
 
-        lda     z:3 ; node
+        ; Return 0
+        lda     #0
 
         bra     done
 

@@ -45,10 +45,6 @@
         beq     failed
 
         ; Result FSNode pointer already on stack
-        ; So pull it
-        ply
-        ; Push found FSNode
-        pha
 
         ; Load pointer to file table to X
         lda     current_process_p

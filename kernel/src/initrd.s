@@ -55,7 +55,7 @@ initrd_dev_dir:
         rts
 .endproc
 
-; struct DirEnt *fs_initrd_readdir(struct FSNode *node, unsigned int index)
+; int fs_initrd_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_initrd_readdir
         setup_frame
         rep     #$30
@@ -68,20 +68,14 @@ initrd_dev_dir:
         cmp     #0
         jne     not_0
 
-        ; Allocate memory for DirEnt
-        pea     .sizeof(DirEnt)
-        jsr     malloc
-        rep     #$30
-        ply
-
-        ; Push new DirEnt struct address
+        ; Push result DirEnt struct pointer
+        lda     z:7
         pha
 
         ; Push source string
         pea     initrd_dev_dir + FSNode::name
 
         ; Push destination string
-        lda     3,s ; New DirEnt struct
         add     #DirEnt::name
         pha
 
@@ -91,10 +85,11 @@ initrd_dev_dir:
         ply
 
         lda     initrd_dev_dir + FSNode::inode
-        plx     ; new Dirent Struct address
+        plx     ; result Dirent Struct address
         sta     a:DirEnt::inode,x
 
-        txa
+        ; Return 0 on success
+        lda     #0
 
         bra     done
 
@@ -110,7 +105,7 @@ failed:
         bra     done
 .endproc
 
-; struct FSNode *fs_initrd_finddir(struct FSNode *node, char *name)
+; int fs_initrd_finddir(struct FSNode *node, char *name, struct FSNode *result)
 .proc fs_initrd_finddir
         setup_frame
 
@@ -137,14 +132,25 @@ try_next_0:
         cmp     #0
         bne     try_next_1
 
-        lda     #initrd_dev_dir
+        ; Use memmove to fill result
+        pea     .sizeof(FSNode)
+        pea     initrd_dev_dir
+        lda     z:7 ; result
+        pha
+        jsr     memmove
+        rep     #$30
+        ply
+        ply
+        ply
+        
+        lda     #0
+        
         bra     done
 
 try_next_1:
-        lda     #0
+        lda     #$FFFF
 
 done:
-        ply     ; pull name
         restore_frame
         rts
 .endproc

@@ -254,8 +254,6 @@ failed:
         ; Get pointer to FSNode
         add     #Device::fsnode
 
-        pha
-
         ; Use memmove to fill result
         pea     .sizeof(FSNode)
         pha
@@ -268,8 +266,6 @@ failed:
         ply
 
         lda     #0
-
-        pla
 
 done:
         restore_frame
