@@ -202,7 +202,7 @@ empty_path:
         ply
         ply
 
-        ; Return 0
+        ; Return 0 on success
         lda     #0
 
         bra     done
