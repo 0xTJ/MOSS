@@ -198,8 +198,7 @@ empty_path:
 
 failed:
         rep     #$30
-
-        lda     #0
+        lda     #$FFFF  ; Return -1
         bra     done
 .endproc
 
