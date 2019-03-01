@@ -256,12 +256,12 @@ failed:
 
         pha
 
-        ; Use memcpy to fill result
+        ; Use memmove to fill result
         pea     .sizeof(FSNode)
         pha
-        ldy     z:7 ; result
-        phy
-        jsr     memcpy
+        lda     z:7 ; result
+        pha
+        jsr     memmove
         rep     #$30
         ply
         ply

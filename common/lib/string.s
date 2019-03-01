@@ -193,15 +193,15 @@ copy_pos:
         add     z:7 ; n
         dec
         tax
-        
-        ; Load dest + n - 1 to X
+
+        ; Load dest + n - 1 to Y
         lda     z:3 ; dest
         add     z:7 ; n
         dec
-        tax
-        
+        tay
+
         ; Load n - 1 to A
-        ldx     z:7 ; n
+        lda     z:7 ; n
         dec
 
         ; Run mvn with:
@@ -213,12 +213,12 @@ copy_pos:
         bra     done
 
 copy_neg:
-        ; Load destination to Y
-        ldy     z:3 ; src
-        
         ; Load source to X
         ldx     z:5 ; src
-        
+
+        ; Load destination to Y
+        ldy     z:3 ; dest
+
         ; Load n - 1 to A
         ldx     z:7 ; n
         dec
