@@ -7,6 +7,7 @@
 .include "functions.inc"
 .include "filesys.inc"
 .include "dev.inc"
+.include "dirent.inc"
 .include "initrd.inc"
 .include "stdlib.inc"
 .include "string.inc"
@@ -178,11 +179,6 @@ failed:
         setup_frame
         rep     #$30
 
-        ; Check that node is dev_root_dir
-        lda     z:3
-        cmp     #dev_root_dir
-        jne     failed
-
         ; Load device list first item
         ldx     devices_list
 
@@ -224,7 +220,7 @@ done_loop:
         inc
         sta     a:DirEnt::inode,x
 
-        txa
+        lda     #0
 
 done:
         restore_frame
