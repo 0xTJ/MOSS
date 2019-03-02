@@ -155,6 +155,6 @@ done:
 .rodata
 
 root_name:
-        .byte 0
+        .asciiz ""
 dev_name:
-        .byte 'd', 'e', 'v', 0
+        .asciiz "dev"
