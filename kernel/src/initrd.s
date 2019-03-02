@@ -6,6 +6,7 @@
 
 .include "initrd.inc"
 .include "functions.inc"
+.include "dirent.inc"
 .include "filesys.inc"
 .include "stdlib.inc"
 .include "string.inc"
@@ -59,10 +60,6 @@ initrd_dev_dir:
 .proc fs_initrd_readdir
         setup_frame
         rep     #$30
-        
-        lda     z:3     ; node
-        cmp     #initrd_root_dir
-        jne     failed
 
         lda     z:5     ; index
         cmp     #0
@@ -101,7 +98,7 @@ done:
         rts
 
 failed:
-        lda     #0
+        lda     #$FFFF
         bra     done
 .endproc
 
