@@ -4,11 +4,11 @@
 .macpack generic
 
 .include "functions.inc"
+.include "unistd.inc"
 
 .code
 
 ; ssize_t read(int fildes, void *buf, size_t nbyte)
-.export read
 .proc read
         setup_frame
         rep     #$30
@@ -27,7 +27,6 @@
 .endproc
 
 ; ssize_t write(int fildes, const void *buf, size_t nbyte)
-.export write
 .proc write
         setup_frame
         rep     #$30

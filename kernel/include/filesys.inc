@@ -21,10 +21,10 @@ FS_TYPE_BITS    = $0F
         ptr     .addr
 .endstruct
 
-.struct DirEnt
-        name    .byte   16
-        inode   .word
-.endstruct
+; .struct DirEnt
+        ; name    .byte   16
+        ; inode   .word
+; .endstruct
 
 .global root_dir
 

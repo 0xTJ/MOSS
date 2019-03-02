@@ -26,26 +26,20 @@ ttyS0_name:
 rx_buff_length = $100
 tx_buff_length = $100
 
-.global rx_buff
 rx_buff:
         .res    rx_buff_length
-.global tx_buff
 tx_buff:
         .res    tx_buff_length
 
 .data
 
 ; Tail of these buffers is the address of the next item to be added
-.global rx_head
 rx_head:
         .word   0
-.global rx_tail
 rx_tail:
         .word   0
-.global tx_head
 tx_head:
         .word   0
-.global tx_tail
 tx_tail:
         .word   0
 
@@ -73,7 +67,7 @@ no_reset:
 
         ; Load tail of RX buffer
         ldx     rx_tail
-        
+
         ; Transfer tail to Y
         txy
 
