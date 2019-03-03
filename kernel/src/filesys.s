@@ -141,15 +141,7 @@ done_loop:
         ; Load path to X
         ldx     z:5
 
-        ; Check first char of path for '/', and ignore it in a loop
         sep     #$20
-slash_loop:
-        lda     a:0,x
-        cmp     #'/'
-        bne     done_slash_loop
-        inx
-        bra     slash_loop
-done_slash_loop:
 
 path_segment_loop:
         ; Load first character of relative path to A
