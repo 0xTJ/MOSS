@@ -51,17 +51,35 @@ skip_first:
         rts
 .endproc
 
+; char *follow_mounts(const char *path)
+.proc skip_slashes
+        setup_frame
+        rep     #$30
+
+        ldx     z:3 ; path
+
+        ; Check first char of path for '/', and ignore it in a loop
+        sep     #$20
+loop:
+        lda     a:0,x
+        cmp     #'/'
+        bne     done_loop
+        inx
+        bra     loop
+done_loop:
+
+        rep     #$30
+        txa
+
+        restore_frame
+        rts
+.endproc
+
 ; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
 ; Both nodes can be the same, node is read before result is overwritten
 .proc traverse_rel_path
         setup_frame
         rep     #$30
-
-        lda     z:5 ; path
-        pha
-        jsr     puts
-        rep     #$30
-        ply
 
         ; User follow_mounts to update node in arguments
         lda     z:3 ; node
@@ -70,6 +88,26 @@ skip_first:
         rep     #$30
         ply
         sta     z:3 ; node
+
+        lda     z:5 ; path
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+
+        ; Skip leading slashes in path and write back
+        lda     z:5 ; path
+        pha
+        jsr     skip_slashes
+        rep     #$30
+        ply
+        sta     z:5
+
+        lda     z:5 ; path
+        pha
+        jsr     puts
+        rep     #$30
+        ply
 
         ; Check for path being empty and jump to empty_path if it is.
         ldx     z:5 ; node
