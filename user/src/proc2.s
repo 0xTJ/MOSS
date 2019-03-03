@@ -27,7 +27,7 @@ tmp_str:
 .rodata
 
 path:
-        .asciiz "/"
+        .asciiz "/dev"
 
 .code
 
