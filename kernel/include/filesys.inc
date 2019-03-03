@@ -40,7 +40,7 @@ FS_TYPE_BITS    = $0F
 .global read_fs
 ; unsigned int write_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .global write_fs
-; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
+; int open_fs(struct FSNode *node, uint8_t read, uint8_t write)
 .global open_fs
 ; void close_fs(struct FSNode *node)
 .global close_fs

@@ -89,12 +89,6 @@ done_loop:
         ply
         sta     z:3 ; node
 
-        lda     z:5 ; path
-        pha
-        jsr     puts
-        rep     #$30
-        ply
-
         ; Skip leading slashes in path and write back
         lda     z:5 ; path
         pha
@@ -103,24 +97,12 @@ done_loop:
         ply
         sta     z:5
 
-        lda     z:5 ; path
-        pha
-        jsr     puts
-        rep     #$30
-        ply
-
         ; Check for path being empty and jump to empty_path if it is.
         ldx     z:5 ; node
         sep     #$20
         lda     a:0,x
         jeq     empty_path
         rep     #$30
-
-        lda     z:5 ; path
-        pha
-        jsr     puts
-        rep     #$30
-        ply
 
         ; Check that node is a directory
         ldx     z:3 ; node
@@ -405,7 +387,7 @@ done:
         rts
 .endproc
 
-; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
+; int open_fs(struct FSNode *node, uint8_t read, uint8_t write)
 .proc open_fs
         setup_frame
 
@@ -416,7 +398,7 @@ done:
 
         ; Check if function exists in node and if it doesn't, exit
         lda     a:FSNode::open,x
-        bze     done
+        bze     not_found
 
         ; Copy parameters onto current stack
         sep     #$20
@@ -442,6 +424,10 @@ done:
 done:
         restore_frame
         rts
+
+not_found:
+        lda     #$FFFF
+        bra     done
 .endproc
 
 ; void close_fs(struct FSNode *node)
