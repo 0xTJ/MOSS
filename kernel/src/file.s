@@ -24,7 +24,8 @@
         rep     #$30
         ply
 
-        ; TODO: Check for failed malloc
+        cmp     #0
+        beq     failed_malloc
         ; TODO: Clean up malloc on failure
 
         ; Push pointer to result FSNode for later
@@ -87,6 +88,7 @@ done:
         restore_frame
         rts
 failed:
+failed_malloc:
         lda     #$FFFF  ; -1
         bra     done
 .endproc
