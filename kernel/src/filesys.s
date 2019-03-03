@@ -53,17 +53,15 @@ skip_first:
 
 ; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
 ; Both nodes can be the same, node is read before result is overwritten
-.export traverse_rel_path
 .proc traverse_rel_path
         setup_frame
         rep     #$30
 
-        ; Check for path being empty and jump to empty_path if it is.
-        ldx     z:5
-        sep     #$20
-        lda     a:0,x
-        jeq     empty_path
-        rep     #$20
+        lda     z:5 ; path
+        pha
+        jsr     puts
+        rep     #$30
+        ply
 
         ; User follow_mounts to update node in arguments
         lda     z:3 ; node
@@ -72,6 +70,19 @@ skip_first:
         rep     #$30
         ply
         sta     z:3 ; node
+
+        ; Check for path being empty and jump to empty_path if it is.
+        ldx     z:5 ; node
+        sep     #$20
+        lda     a:0,x
+        jeq     empty_path
+        rep     #$30
+
+        lda     z:5 ; path
+        pha
+        jsr     puts
+        rep     #$30
+        ply
 
         ; Check that node is a directory
         ldx     z:3 ; node
