@@ -13,7 +13,7 @@
 
 .code
 
-; int open(const char *path, int oflag, ... )
+; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
         setup_frame
         rep     #$30
@@ -25,6 +25,7 @@
         ply
 
         ; TODO: Check for failed malloc
+        ; TODO: Clean up malloc on failure
 
         ; Push pointer to result FSNode for later
         pha
@@ -198,14 +199,13 @@ failed:
         bze     failed
 
         ; Run read on it
-        ldx     z:5 ; dir_p
+        ldx     z:7 ; result
         phx
-        ldx     z:7 ; count
+        ldx     z:5 ; count
         phx
         pha
         jsr     readdir_fs
         rep     #$30
-        ply
         ply
         ply
         ply

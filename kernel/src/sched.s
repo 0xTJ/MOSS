@@ -18,6 +18,7 @@
         jsr     clone_current_proc  ; TODO: Check for error state
         rep     #$30
 
+        ; Push new process struct
         pha
 
         ldx     z:3 ; fn
@@ -26,12 +27,15 @@
         phx
         pha
         jsr     setup_proc
+        rep     #$30
         ply
         ply
         ply
 
+        ; Pull new process struct
         plx
 
+        ; Set new process as ready to run
         lda     #PROCESS_READY
         sta     a:Process::state,x
         dec     disable_scheduler

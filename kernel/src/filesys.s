@@ -6,6 +6,7 @@
 
 .include "filesys.inc"
 .include "functions.inc"
+.include "stdio.inc"
 .include "string.inc"
 
 .data
@@ -26,7 +27,6 @@ root_dir:
 .code
 
 ; struct FSNode *follow_mounts(struct FSNode *node)
-.export follow_mounts
 .proc follow_mounts
         setup_frame
 
@@ -74,7 +74,7 @@ skip_first:
         sta     z:3 ; node
 
         ; Check that node is a directory
-        ldy     z:3 ; node
+        ldx     z:3 ; node
         lda     a:FSNode::flags,x
         cmp     #FS_DIRECTORY
         jne     failed
@@ -443,7 +443,7 @@ done:
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         lda     a:FSNode::readdir,x
-        bze     done
+        bze     not_found
 
         ; Copy parameters onto current stack
         lda     z:7
@@ -465,6 +465,9 @@ done:
 done:
         restore_frame
         rts
+
+not_found:
+        lda     #$FFFF
 .endproc
 
 ; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
@@ -478,7 +481,7 @@ done:
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         lda     a:FSNode::finddir,x
-        bze     done
+        bze     not_found
 
         ; Copy parameters onto current stack
         lda     z:7
@@ -500,4 +503,7 @@ done:
 done:
         restore_frame
         rts
+
+not_found:
+        lda     #$FFFF
 .endproc
