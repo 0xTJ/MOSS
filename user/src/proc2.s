@@ -62,7 +62,6 @@ path:
         rep     #$30
         ply
 
-
         pea     tmp + DirEnt::name
         jsr     puts
         rep     #$30
