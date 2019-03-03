@@ -421,6 +421,9 @@ done:
         ply
         rep     #$10
 
+        ; Return 0
+        lda     #0
+
 done:
         restore_frame
         rts
