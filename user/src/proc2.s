@@ -40,32 +40,39 @@ path:
         ply
         ply
 
-        pea     tmp
-        pea     0
         pha
+        pea     0
+
+list_loop:
+        plx
+        ply
+        phy
+        phx
+
+        pea     tmp
+        phx
+        phy
         cop     9
         rep     #$30
         ply
         ply
         ply
 
-        pea     10
-        pea     tmp_str
-        pha
-        jsr     itoa
-        rep     #$30
-        ply
-        ply
-        ply
-        pea     tmp_str
-        jsr     puts
-        rep     #$30
-        ply
+        cmp     #0
+        bne     done_list
 
         pea     tmp + DirEnt::name
         jsr     puts
         rep     #$30
         ply
+
+        pla
+        inc
+        pha
+
+        bra     list_loop
+
+done_list:
 
 loop:
         jsr     getchar
