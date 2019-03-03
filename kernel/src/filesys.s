@@ -387,7 +387,7 @@ done:
         rts
 .endproc
 
-; int open_fs(struct FSNode *node, uint8_t read, uint8_t write)
+; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
 .proc open_fs
         setup_frame
 
@@ -398,7 +398,7 @@ done:
 
         ; Check if function exists in node and if it doesn't, exit
         lda     a:FSNode::open,x
-        bze     not_found
+        bze     done
 
         ; Copy parameters onto current stack
         sep     #$20
@@ -427,10 +427,6 @@ done:
 done:
         restore_frame
         rts
-
-not_found:
-        lda     #$FFFF
-        bra     done
 .endproc
 
 ; void close_fs(struct FSNode *node)

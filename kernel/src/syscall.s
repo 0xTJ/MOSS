@@ -36,6 +36,7 @@ syscall clone, 14
 syscall getpid, 0
 syscall getppid, 0
 syscall readdir, 6
+syscall close, 2
 
 .import __SYSCALL_TABLE__
 .import __SYSCALL_COUNT__
@@ -218,4 +219,8 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_readdir
         jmp     readdir
+.endproc
+
+.proc sc_close
+        jmp     close
 .endproc

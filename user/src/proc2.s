@@ -74,6 +74,10 @@ list_loop:
 
 done_list:
 
+        ply
+        
+        jsr     close
+
 loop:
         jsr     getchar
         rep     #$30
