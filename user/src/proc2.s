@@ -2,81 +2,234 @@
 .smart
 
 .macpack generic
+.macpack longbranch
 
 .include "functions.inc"
 .include "stdio.inc"
 .include "dirent.inc"
 .include "fcntl.inc"
 .include "stdlib.inc"
+.include "string.inc"
 .include "unistd.inc"
 
 .bss
 
-tmp:
+tmp_dirent:
         .tag    DirEnt
 tmp_str:
-        .word   0
-        .word   0
-        .word   0
-        .word   0
-        .word   0
-        .word   0
-        .word   0
-        .word   0
-
-.rodata
-
-path:
-        .asciiz "/dev"
+        .asciiz "/"
+        .res    62
 
 .code
 
-.export proc2
-.proc proc2
+; void rls_helper(char *abs_str, char *rel_str, int level);
+.proc rls_helper
+        setup_frame
+        rep     #$30
+
+        ; Load level to A
+        lda     z:7 ; level
+
+        ; If level == -1, is root and don't print an entry
+        cmp     #$FFFF
+        beq     done_printing_entry
+
+        ; A = level * 4
+        asl
+        asl
+
+        ; Skip printing spaces if level is 0
+        bze     done_space_loop
+
+space_loop:
+        ; Push current spaces to print left to stack
+        pha
+
+        ; Print a single space to stdout
+        pea     ' '
+        jsr     putchar
+        rep     #$30
+        ply
+
+        ; Pull current spaces to print left from stack and decrement
+        pla
+        dec
+        
+        ; If there are spaces left to print, loop
+        bnz     space_loop
+
+done_space_loop:
+
+        ; Write out level indicator
+        pea     ' '
+        pea     '-'
+        pea     '-'
+        pea     '+'
+        jsr     putchar
+        rep     #$30
+        ply
+        jsr     putchar
+        rep     #$30
+        ply
+        jsr     putchar
+        rep     #$30
+        ply
+        jsr     putchar
+        rep     #$30
+        ply
+
+        ; Write only the name of the current entry
+        lda     z:5 ; rel_str
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+
+done_printing_entry:
+
+        ; Open the current file
         pea     O_RDONLY
-        pea     path
+        lda     z:3 ; abs_str
+        pha
         jsr     open
         rep     #$30
         ply
         ply
 
+        ; If that failed, done with this entry, don't close
+        cmp     #$FFFF
+        jeq     failed
+
+        ; Push file descriptor
         pha
+
+        ; Push 0, the first entry in directory
         pea     0
 
-list_loop:
+loop:
+        ; Pull entry in directory to X and file descriptor to Y
         plx
         ply
-        phy
-        phx
 
-        pea     tmp
-        phx
+        ; Push file descriptor, then index in directory plus 1
         phy
+        inx
+        phx
+        dex
+
+        ; Run readdir on this entry, at current index
+        pea     tmp_dirent
+        phx     ; Entry in directory
+        phy     ; File descriptor
         cop     9
         rep     #$30
         ply
         ply
         ply
 
+        ; If it didn't succeed, done with this entry
         cmp     #0
-        bne     done_list
+        jne     done
 
-        pea     tmp + DirEnt::name
-        jsr     puts
+        lda     z:5 ; rel_str
+        pha
+        jsr     strlen
         rep     #$30
         ply
+        add     z:5 ; rel_str
+        pha
 
-        pla
+        ; Add slash to end of current pathq
+        tax
+        sep     #$20
+        lda     #'/'
+        sta     a:0,x
+        rep     #$20
+
+        ; Load latest pointer in strong from stack to A
+        lda     1,s
+        
+        ; Increment level for next recursion
+        ldx     z:7 ; level
+        inx
+        phx
+
+        ; Push pointer past current one to stack
         inc
         pha
 
-        bra     list_loop
-
-done_list:
-
+        ; Copy name of this entry from DirEnt to path string
+        pea     tmp_dirent + DirEnt::name
+        pha
+        jsr     strcpy
+        rep     #$30
         ply
-        
+        ply
+
+        ; Push absolute path
+        ldy     z:3 ; abs_str
+        phy
+
+        ; Call this function recursively
+        jsr     rls_helper
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Set byte to 0 at position of slash to reset path length
+        plx
+        sep     #$20
+        stz     a:0,x
+        rep     #$20
+
+        ; Go to next entry
+        jmp     loop
+
+done:
+        ; Pull file index
+        ply
+
+        ; Close file descriptor
         jsr     close
+
+failed:
+        restore_frame
+        rts
+.endproc
+
+; void rls(char *root_path)
+.proc rls
+        setup_frame
+        rep     #$30
+
+        ; Push -1 as int
+        pea     $FFFF
+
+        ; Push end of root_path
+        lda     z:3 ; root_path
+        pha
+        jsr     strlen
+        rep     #$30
+        ply
+        add     #tmp_str
+        pha
+
+        ; Push root_path
+        lda     z:3 ; root_path
+        pha
+
+        ; Call helper
+        jsr     rls_helper
+
+        restore_frame
+        rts
+.endproc
+
+.export proc2
+.proc proc2
+        pea     tmp_str
+        jsr     rls
 
 loop:
         jsr     getchar

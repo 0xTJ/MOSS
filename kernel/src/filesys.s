@@ -7,7 +7,14 @@
 .include "filesys.inc"
 .include "functions.inc"
 .include "stdio.inc"
+.include "stdlib.inc"
 .include "string.inc"
+
+.pushseg
+.bss
+tmp:
+.res 64
+.popseg
 
 .data
 
@@ -281,6 +288,7 @@ failed:
 ; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
 .proc mount_fs
         setup_frame
+        rep     #$30
 
         ; Load mounted into X
         ldx     z:5
@@ -315,7 +323,6 @@ invalid_type:
 ; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc read_fs
         setup_frame
-
         rep     #$30
 
         ; Load node to x
@@ -390,7 +397,6 @@ done:
 ; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
 .proc open_fs
         setup_frame
-
         rep     #$30
 
         ; Load node to x
@@ -432,7 +438,6 @@ done:
 ; void close_fs(struct FSNode *node)
 .proc close_fs
         setup_frame
-
         rep     #$30
 
         ; Load node to x
@@ -461,7 +466,6 @@ done:
 ; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc readdir_fs
         setup_frame
-
         rep     #$30
 
         ; Load node to x
@@ -494,12 +498,12 @@ done:
 
 not_found:
         lda     #$FFFF
+        bra     done
 .endproc
 
 ; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
 .proc finddir_fs
         setup_frame
-
         rep     #$30
 
         ; Load node to x
@@ -532,4 +536,5 @@ done:
 
 not_found:
         lda     #$FFFF
+        bra     done
 .endproc

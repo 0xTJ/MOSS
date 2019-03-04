@@ -14,7 +14,7 @@ all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET) user.bin
 	bin2mot -O0x006000 -L0x001400 -2 -H $<
-	bin2mot -O0x008000 -L0x000600 -2 -H -A user.bin $<.mot
+	bin2mot -O0x008000 -L0x000700 -2 -H -A user.bin $<.mot
 
 $(TARGET) user.bin: $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@

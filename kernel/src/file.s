@@ -6,6 +6,7 @@
 .include "proc.inc"
 .include "functions.inc"
 .include "stdlib.inc"
+.include "stdio.inc"
 .include "fcntl.inc"
 .include "filesys.inc"
 .include "unistd.inc"
@@ -258,7 +259,7 @@ failed:
         add     current_process_p
         add     #Process::files_p
         tax
-
+        
         ; Load address of FSNode to A
         lda     a:0,x
         bze     failed

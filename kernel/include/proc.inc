@@ -1,4 +1,4 @@
-PROC_MAX_FILES = 4
+PROC_MAX_FILES = 8
 
 PROC_NUM = 8
 
@@ -18,7 +18,7 @@ PROCESS_TERMINATED = 2
 
         skp_sav .word
 
-        files_p .addr 4
+        files_p .addr 8
 .endstruct
 
 .global sys_tick
