@@ -19,6 +19,13 @@ tmp_dirent:
 tmp_str:
         .asciiz "/"
         .res    62
+        
+.rodata
+
+level_string:
+        .asciiz "+-- "
+four_spaces_string:
+        .asciiz "    "
 
 .code
 
@@ -30,28 +37,28 @@ tmp_str:
         ; Load level to A
         lda     z:7 ; level
 
-        ; If level == -1, is root and don't print an entry
-        cmp     #$FFFF
-        beq     done_printing_entry
+        ; If level == 0, is root and don't print an entry
+        bze     done_printing_entry
 
-        ; A = level * 4
-        asl
-        asl
-
-        ; Skip printing spaces if level is 0
+        ; A = level - 1
+        dec
+        
+        ; Skip printing spaces if level was 1
         bze     done_space_loop
 
 space_loop:
-        ; Push current spaces to print left to stack
+        ; Push current 4 spaces to print left to stack
         pha
 
-        ; Print a single space to stdout
-        pea     ' '
-        jsr     putchar
+        ; Write out four spaces
+        pea     stdout
+        pea     four_spaces_string
+        jsr     fputs
         rep     #$30
         ply
+        ply
 
-        ; Pull current spaces to print left from stack and decrement
+        ; Pull current 4 spaces to print left from stack and decrement
         pla
         dec
         
@@ -61,21 +68,11 @@ space_loop:
 done_space_loop:
 
         ; Write out level indicator
-        pea     ' '
-        pea     '-'
-        pea     '-'
-        pea     '+'
-        jsr     putchar
+        pea     stdout
+        pea     level_string
+        jsr     fputs
         rep     #$30
         ply
-        jsr     putchar
-        rep     #$30
-        ply
-        jsr     putchar
-        rep     #$30
-        ply
-        jsr     putchar
-        rep     #$30
         ply
 
         ; Write only the name of the current entry
@@ -203,8 +200,8 @@ failed:
         setup_frame
         rep     #$30
 
-        ; Push -1 as int
-        pea     $FFFF
+        ; Push 0 as int
+        pea     0
 
         ; Push end of root_path
         lda     z:3 ; root_path
