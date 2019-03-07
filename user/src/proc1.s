@@ -48,10 +48,10 @@
         rep     #$30
         ply
 
-        ; Start running process 2
+        ; Start running process 1
         pea     0
         pea     0
-        pea     $77ff
+        pea     $BFFF
         pea     proc2
         jsr     clone
         rep     #$30
@@ -59,7 +59,7 @@
         ply
         ply
         ply
-
+        
 loop:
         bra     loop
 .endproc

@@ -10,7 +10,9 @@
 .include "mensch.inc"
 .include "w65c265s.inc"
 .include "syscall.inc"
+.include "o65.inc"
 .include "stdio.inc"
+.include "stdlib.inc"
 .include "errcode.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
@@ -18,7 +20,12 @@
 
 .import F_CLK: far
 
-.import user
+; .import user
+
+.rodata
+
+dev_ttyS0_path:
+        .asciiz "/dev/ttyS0"
 
 .code
 
@@ -68,11 +75,23 @@
         ; Setup system tick timer
         jsr     setup_systick_timer
 
+        pea     $2000
+        pea     $2200
+        pea     $3000
+        pea     $3800
+        pea     user_o65
+        jsr     o65_load
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
         ; Start running process 1
         pea     0
         pea     0
-        pea     $7fff
-        pea     user
+        pea     $AFFF
+        pea     $3800
         jsr     clone
         rep     #$30
         ply
@@ -83,3 +102,9 @@
 loop:
         bra     loop
 .endproc
+
+.rodata
+
+.export user_o65
+user_o65:
+        .incbin "user.o65"

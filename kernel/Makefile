@@ -12,12 +12,14 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(
 
 all: $(TARGET).mot
 
-$(TARGET).mot: $(TARGET) user.bin
-	bin2mot -O0x006000 -L0x001400 -2 -H $<
-	bin2mot -O0x008000 -L0x000700 -2 -H -A user.bin $<.mot
+$(TARGET).mot: src/user.o65 $(TARGET)
+	bin2mot -O0x006000 -L0x002200 -2 -H $(TARGET)
 
-$(TARGET) user.bin: $(OBJS)
+$(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
+
+src/user.o65: ..\user\user.o65
+	copy ..\user\user.o65 src\user.o65
 
 .PHONY: clean
 clean:
