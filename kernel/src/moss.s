@@ -2,6 +2,7 @@
 .smart
 
 .macpack generic
+.macpack longbranch
 
 .include "functions.inc"
 .include "proc.inc"
@@ -19,13 +20,6 @@
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
 
 .import F_CLK: far
-
-; .import user
-
-.rodata
-
-dev_ttyS0_path:
-        .asciiz "/dev/ttyS0"
 
 .code
 
@@ -58,6 +52,129 @@ dev_ttyS0_path:
         rts
 .endproc
 
+; int runO65(uint8_t *o65)
+.proc runO65
+        setup_frame
+        rep     #$30
+
+        ; Allocate space for stack variables
+        tsc
+        sub     #10
+        tcs
+
+        ; 1: void *text_base
+        ; 3: void *data_base
+        ; 5: void *bss_base
+        ; 7: void *zero_base
+        ; 9: void *stack_init
+
+        ; Allocate text space and store pointer to stack
+        ldx     z:3
+        lda     a:O65Header::tlen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     1,s ; text_base
+
+        ; Allocate data space and store pointer to stack
+        ldx     z:3
+        lda     a:O65Header::dlen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     3,s ; data_base
+
+        ; Allocate bss space and store pointer to stack
+        ldx     z:3
+        lda     a:O65Header::blen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     5,s ; bss_base
+
+        ; Allocate zero space and store pointer to stack
+        ldx     z:3
+        lda     a:O65Header::zlen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     7,s ; zero_base
+
+        ; Allocate stack space and store pointer to stack
+        ldx     z:3
+        lda     a:O65Header::stack,x
+        bnz     not_zero_stack
+        lda     #$200
+not_zero_stack:
+        add     #$80
+        pha
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        add     1,s
+        ply
+        sta     9,s ; stack_init
+
+        ; Call o65 loader
+        lda     7,s ; zero_base
+        pha
+        lda     7,s ; bss_base
+        pha
+        lda     7,s ; data_base
+        pha
+        lda     7,s ; text_base
+        pha
+        lda     z:3 ; o65
+        pha
+        jsr     o65_load
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+        ply
+
+        ; Load parameters for clone
+        lda     9,s ; stack_base
+        tax
+        lda     1,s ; text_base
+
+        ; Create new process with clone
+        pea     0
+        pea     0
+        phx
+        pha
+        jsr     clone
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+
+done:
+        restore_frame
+        rts
+
+failed:
+        lda     #0
+        bra     done
+.endproc
+
 .export main
 .proc main
         rep     #$30
@@ -75,36 +192,23 @@ dev_ttyS0_path:
         ; Setup system tick timer
         jsr     setup_systick_timer
 
-        pea     $2000
-        pea     $2200
-        pea     $3000
-        pea     $3800
         pea     user_o65
-        jsr     o65_load
+        jsr     runO65
         rep     #$30
-        ply
-        ply
-        ply
-        ply
-
-        ; Start running process 1
-        pea     0
-        pea     0
-        pea     $AFFF
-        pea     $3800
-        jsr     clone
-        rep     #$30
-        ply
-        ply
-        ply
         ply
 
 loop:
         bra     loop
 .endproc
 
+.data
+
+tmp_str:
+        .res 64
+
 .rodata
 
-.export user_o65
 user_o65:
         .incbin "user.o65"
+dev_ttyS0_path:
+        .asciiz "/dev/ttyS0"
