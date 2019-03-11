@@ -8,18 +8,15 @@ TARGET = moss.bin
 AS_SRC := $(wildcard src/*.s) $(wildcard src/*/*.s) $(wildcard ../common/lib/*.s) $(wildcard ../common/lib/*/*.s)
 OBJS := $(AS_SRC:.s=.o)
 DEPS := $(OBJS:.o=.d)
-DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(wildcard src/*.d) $(wildcard src/*\*.d) $(wildcard src/*.lst) $(wildcard src/*\*.lst)))
+DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(wildcard src/*.d) $(wildcard src/*\*.d) $(wildcard src/*.lst) $(wildcard src/*\*.lst))) $(TARGET) $(TARGET).mot $(TARGET).map
 
 all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET)
 	bin2mot -O0x006000 -L0x002000 -2 -H $^
 
-$(TARGET): $(OBJS) src/user.o65 mensch.cfg
+$(TARGET): $(OBJS) ../user/user.o65 mensch.cfg
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
-
-src/user.o65: ..\user\user.o65
-	copy ..\user\user.o65 src\user.o65
 
 .PHONY: clean
 clean:
