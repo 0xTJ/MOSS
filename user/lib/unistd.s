@@ -10,7 +10,7 @@
 
 ; ssize_t read(int fd, void *buf, size_t nbyte)
 .proc read
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:7 ; nbyte
@@ -22,13 +22,13 @@
         
         cop     $04
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; ssize_t write(int fd, const void *buf, size_t nbyte)
 .proc write
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:7 ; nbyte
@@ -40,13 +40,13 @@
         
         cop     $05
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; int close(int fd)
 .proc close
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; fd
@@ -54,6 +54,6 @@
         
         cop     $0A
 
-        restore_frame
+        leave
         rts
 .endproc

@@ -10,7 +10,7 @@
 ; int clone(int (*fn)(void *), void *child_stack, int flags, void *arg, ... /* pid_t *ptid, void *newtls, pid_t *ctid */)
 .export clone
 .proc clone
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:15    ; ctid
@@ -30,6 +30,6 @@
         
         cop     $06
 
-        restore_frame
+        leave
         rts
 .endproc

@@ -62,7 +62,7 @@
 .charmap    $79, $79
 .charmap    $7A, $7A
 
-.macro setup_frame
+.macro enter
         rep     #$30
         ; Store D on stack and set new stack frame
         tsc
@@ -70,7 +70,7 @@
         tcd
 .endmacro
 
-.macro restore_frame preserve_a
+.macro leave preserve_a
         ; Setting preserve_a will obliterate Y instead of A
         ; Defaults to preserving A
 
@@ -96,20 +96,20 @@
 
 .macro hard_reset
         sei
-        
+
         sep     #$20
-        
+
         lda     #$01
         sta     T3LL
         stz     T3CH
-        
+
         lda     #(1 << 4)
         tsb     BCR
-        
+
         lda     #(1 << 0)
         trb     TER
         tsb     TER
-        
+
         .local loop_waiting
 loop_waiting:
         bra     loop_waiting

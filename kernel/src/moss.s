@@ -57,7 +57,7 @@ O65_SIZE = 2000
 
 ; int runO65(uint8_t *o65)
 .proc runO65
-        setup_frame
+        enter
         rep     #$30
 
         ; Allocate space for stack variables
@@ -170,7 +170,7 @@ not_zero_stack:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 
 failed:
@@ -203,13 +203,22 @@ failed:
         ply
         ply
 
+        ; Loop forever on failure
+        cmp     #0
+        blt     loop
+
         ; Push prgload fd for later
         pha
 
+        ; Allocate temporary load buffer
         pea     O65_SIZE
         jsr     malloc
         rep     #$30
         ply
+
+        ; Loop forever on failure
+        cmp     #0
+        beq     loop
 
         ; Load prgload fd to X and push allocated buffer twice to run and free
         plx
@@ -226,6 +235,10 @@ failed:
         ply
         ply
         ply
+
+        ; Loop forever on failure
+        cmp     #.sizeof(O65Header)
+        blt     loop
 
         ; Close prgload fd
         jsr     close

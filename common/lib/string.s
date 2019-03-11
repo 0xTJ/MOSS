@@ -11,7 +11,7 @@
 ; char *strcpy(char *dest, const char *src)
 .export strcpy
 .proc strcpy
-        setup_frame
+        enter
 
         sep     #$20    ; Set main data to 8-bit
         rep     #$10    ; Set index registers to 16-bit
@@ -32,14 +32,14 @@ skip_first_inc:
 
         lda     z:3
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; size_t strlen(const char *str)
 .export strlen
 .proc strlen
-        setup_frame
+        enter
 
         ; Load initial values
         rep     #$10
@@ -60,14 +60,14 @@ done:
         rep     #$30
         tya
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ;int strcmp (const char *str1, const char *str2)
 .export strcmp
 .proc strcmp
-        setup_frame
+        enter
 
         rep     #$10
         sep     #$20
@@ -96,14 +96,14 @@ set_upper_byte:
 clear_upper_byte:
         and     #$00FF
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void *memset(void *s, int c, size_t n)
 .export memset
 .proc memset
-        setup_frame
+        enter
         rep     #$30
 
         ldx     z:7 ; n
@@ -133,14 +133,14 @@ done:
 
 done:
         rep    #$30
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void *memcpy(void *dest, const void *src, size_t n)
 .export memcpy
 .proc memcpy
-        setup_frame
+        enter
         rep     #$30
 
         ; Put n - 1 into A, or done if n == 0
@@ -160,14 +160,14 @@ done:
         mvn     0, 0
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void *memmove(void *dest, const void *src, size_t n)
 .export memmove
 .proc memmove
-        setup_frame
+        enter
         rep     #$30
 
         ; Done if n == 0
@@ -232,6 +232,6 @@ copy_neg:
         bra     done
 
 done:
-        restore_frame
+        leave
         rts
 .endproc

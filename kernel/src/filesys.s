@@ -35,7 +35,7 @@ root_dir:
 
 ; struct FSNode *follow_mounts(struct FSNode *node)
 .proc follow_mounts
-        setup_frame
+        enter
 
         rep     #$30
 
@@ -54,13 +54,13 @@ skip_first:
         beq     loop
 
         txa
-        restore_frame
+        leave
         rts
 .endproc
 
 ; char *follow_mounts(const char *path)
 .proc skip_slashes
-        setup_frame
+        enter
         rep     #$30
 
         ldx     z:3 ; path
@@ -78,14 +78,14 @@ done_loop:
         rep     #$30
         txa
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
 ; Both nodes can be the same, node is read before result is overwritten
 .proc traverse_rel_path
-        setup_frame
+        enter
         rep     #$30
 
         ; User follow_mounts to update node in arguments
@@ -214,7 +214,7 @@ done_path_segment:
 
         ; Return with result from recursive call
 done:
-        restore_frame
+        leave
         rts
 
 empty_path:
@@ -246,7 +246,7 @@ failed:
 ; int traverse_abs_path(char *path, struct FSNode *result)
 .export traverse_abs_path
 .proc traverse_abs_path
-        setup_frame
+        enter
         rep     #$30
 
         ; Push result node
@@ -276,7 +276,7 @@ failed:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 
 failed:
@@ -287,7 +287,7 @@ failed:
 
 ; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
 .proc mount_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load mounted into X
@@ -316,13 +316,13 @@ failed:
         sta     a:FSNode::flags,x
 
 invalid_type:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc read_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load node to x
@@ -353,13 +353,13 @@ invalid_type:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; unsigned int write_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc write_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load node to x
@@ -390,13 +390,13 @@ done:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
 .proc open_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load node to x
@@ -431,13 +431,13 @@ done:
         lda     #0
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void close_fs(struct FSNode *node)
 .proc close_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load node to x
@@ -459,13 +459,13 @@ done:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc readdir_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load node to x
@@ -493,7 +493,7 @@ done:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 
 not_found:
@@ -503,7 +503,7 @@ not_found:
 
 ; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
 .proc finddir_fs
-        setup_frame
+        enter
         rep     #$30
 
         ; Load node to x
@@ -531,7 +531,7 @@ not_found:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 
 not_found:

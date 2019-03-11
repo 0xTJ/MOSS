@@ -21,7 +21,7 @@ stderr:
 
 ; int fgetc(FILE *stream)
 .proc fgetc
-        setup_frame
+        enter
         rep     #$30
 
         ; Create stack space for read value
@@ -48,7 +48,7 @@ stderr:
         pla
 
 done:
-        restore_frame
+        leave
         rts
 
 failed:
@@ -58,7 +58,7 @@ failed:
 
 ; char *fgets(char *str, int num, FILE * stream)
 .proc fgets
-        setup_frame
+        enter
         rep     #$30
 
         ; Push original string pointer
@@ -105,13 +105,13 @@ done_loop:
         lda     #$0000
         
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; int fputc(int c, FILE *stream)
 .proc fputc
-        setup_frame
+        enter
         rep     #$30
 
         pea     1   ; write 1 byte
@@ -123,13 +123,13 @@ done:
         pha         ; File Descriptor
         jsr     write
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; int fputs(const char *s, FILE * stream)
 .proc fputs
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; s
@@ -146,7 +146,7 @@ done:
         pha         ; File Descriptor
         jsr     write
 
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -155,20 +155,20 @@ getc    := fgetc
 
 ; int getchar(void)
 .proc getchar
-        setup_frame
+        enter
         rep     #$30
 
         pea     stdin
         jsr     fgetc
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; char *gets(char *str)
 .proc gets
-        setup_frame
+        enter
         rep     #$30
 
         pea     stdin
@@ -177,7 +177,7 @@ done:
         jsr     fgets
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -186,7 +186,7 @@ putc    := fputc
 
 ; int putchar(int c)
 .proc putchar
-        setup_frame
+        enter
         rep     #$30
 
         pea     stdout
@@ -194,13 +194,13 @@ putc    := fputc
         pha
         jsr     fputc
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; int puts(const char *s)
 .proc puts
-        setup_frame
+        enter
         rep     #$30
 
         pea     stdout
@@ -215,6 +215,6 @@ putc    := fputc
         pea     a:10    ; NL
         jsr     putchar
 
-        restore_frame
+        leave
         rts
 .endproc

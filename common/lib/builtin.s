@@ -10,7 +10,7 @@
 ; cdiv_t __divide_s8_s8(char dividend, char divisor)
 .export __divide_s8_s8
 .proc __divide_s8_s8
-        setup_frame
+        enter
         ; 8-bit A, X, Y
         sep     #$30
 
@@ -100,7 +100,7 @@ skip_negate_for_divisor:
         xba
         txa
 
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -112,7 +112,7 @@ skip_negate_for_divisor:
         lda     #0
         pha
 
-        setup_frame
+        enter
         ; Frame: unsigned char quotient, void *ret_addr, unsigned char dividend, unsigned char divisor
         
         sep     #$30
@@ -144,7 +144,7 @@ after_dividend_commit:
         dey         ; Decrement shift count
         bnz     division_loop   ; Loop if Y is not 0
 
-        restore_frame
+        leave
 
         sep     #$30
         
@@ -160,7 +160,7 @@ after_dividend_commit:
 ; div_t __divide_s16_s16(int dividend, int divisor)
 .export __divide_s16_s16
 .proc __divide_s16_s16
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:5 ; divisor
@@ -254,7 +254,7 @@ skip_negate_for_divisor:
         plx
         ; Remainder is in A, quotient in X
 
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -266,7 +266,7 @@ skip_negate_for_divisor:
         lda     #0
         pha
 
-        setup_frame
+        enter
         ; Frame: unsigned int quotient, void *ret_addr, unsigned int dividend, unsigned int divisor
 
         lda     z:7 ; divisor
@@ -296,7 +296,7 @@ after_dividend_commit:
         dey         ; Decrement shift count
         bnz     division_loop   ; Loop if Y is not 0
 
-        restore_frame
+        leave
 
         txa ; Move remainder to A
         plx ; Pull quotient into X

@@ -10,7 +10,7 @@
 ; void error_code(int code)
 .proc error_code
         sei
-        setup_frame
+        enter
         
         rep     #$30
         
@@ -23,6 +23,6 @@
 forever_loop:
         bra     forever_loop
         
-        restore_frame
+        leave
         rts
 .endproc

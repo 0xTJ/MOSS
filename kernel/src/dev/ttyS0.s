@@ -253,7 +253,7 @@ turn_off:
 
 ; ssize_t dev_ttyS0_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
 .proc dev_ttyS0_read
-        setup_frame
+        enter
         rep     #$10
         sep     #$20
 
@@ -299,14 +299,14 @@ done_loop:
         rep     #$30
         lda     z:7 ; nbytes
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; ssize_t dev_ttyS0_write(struct CharDriver *device, const void *buf, size_t nbytes, off_t offset)
 .global dev_ttyS0_write
 .proc dev_ttyS0_write
-        setup_frame
+        enter
 
         rep     #$10
         sep     #$20
@@ -359,6 +359,6 @@ done_loop:
         rep     #$30
         lda     z:7 ; nbytes
 
-        restore_frame
+        leave
         rts
 .endproc

@@ -58,7 +58,7 @@ initrd_dev_dir:
 
 ; int fs_initrd_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_initrd_readdir
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:5     ; index
@@ -94,7 +94,7 @@ not_0:
         bra     failed
 
 done:
-        restore_frame
+        leave
         rts
 
 failed:
@@ -104,7 +104,7 @@ failed:
 
 ; int fs_initrd_finddir(struct FSNode *node, char *name, struct FSNode *result)
 .proc fs_initrd_finddir
-        setup_frame
+        enter
 
         rep     #$30
 
@@ -148,7 +148,7 @@ try_next_1:
         lda     #$FFFF
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 

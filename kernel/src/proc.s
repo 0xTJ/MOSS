@@ -215,7 +215,7 @@ failed:
 ; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
 ; Assumes Program Bank is $00
 .proc setup_proc
-        setup_frame
+        enter
         rep     #$30
 
         ; Lock scheduler mutex
@@ -252,7 +252,7 @@ failed:
         ; Unlock scheduler mutex
         dec     disable_scheduler
 
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -359,7 +359,7 @@ found_empty_proc:   ; X contains new PID * 2
 .endproc
 
 .proc find_previous_proc
-        setup_frame
+        enter
         rep     #$30
 
         inc     disable_scheduler
@@ -381,13 +381,13 @@ loop:
 found_prev:
         dec     disable_scheduler
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void term_proc(int pid)
 .proc term_proc
-        setup_frame
+        enter
         rep     #$30
 
         inc     disable_scheduler
@@ -429,13 +429,13 @@ skip:
 
         dec     disable_scheduler
 
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void destroy_proc(int pid)
 .proc destroy_proc
-        setup_frame
+        enter
         rep     #$30
 
         inc     disable_scheduler
@@ -492,6 +492,6 @@ skip:
 
         dec     disable_scheduler
 
-        restore_frame
+        leave
         rts
 .endproc

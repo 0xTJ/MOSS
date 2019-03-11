@@ -11,7 +11,7 @@
 
 ; int abs(int n)
 .proc abs
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; n
@@ -22,7 +22,7 @@
 
 is_positive:
 
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -31,7 +31,7 @@ div             := __divide_s16_s16
 
 ; long int labs(long int n)
 .proc labs
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; lobyte(n)
@@ -58,7 +58,7 @@ div             := __divide_s16_s16
         inx
 
 done:
-        restore_frame
+        leave
         rts
 .endproc
 
@@ -71,7 +71,7 @@ base36chars:
 
 ; char *itoa (int value, char *str, int base)
 .proc itoa
-        setup_frame
+        enter
         rep     #$30
         
         ; Check that base is acceptable
@@ -167,7 +167,7 @@ write_loop:
         pla     ; Pull original str
 
 done:
-        restore_frame
+        leave
         rts
         
 failed:

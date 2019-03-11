@@ -32,10 +32,10 @@
         rts
 .endproc
 
-; void * near malloc(size_t size) near
+; void *malloc(size_t size)
 .export malloc
 .proc malloc
-        setup_frame
+        enter
 
         rep     #$30
         lda     z:3
@@ -94,21 +94,21 @@ skip_resize:
 
 not_found:   ; Y will contain NULL if it was not found
         tya
-        restore_frame
+        leave
         rts
 .endproc
 
 
-; void free(void * far ptr) far
+; void free(void *ptr)
 .export free
 .proc free
-        setup_frame
+        enter
 
         lda     z:3
         sub     #.sizeof(HeapTag)
         tax
         stz     a:HeapTag::flags,x
 
-        restore_frame
+        leave
         rts
 .endproc

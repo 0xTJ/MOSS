@@ -31,7 +31,7 @@ four_spaces_string:
 
 ; void rls_helper(char *abs_str, char *rel_str, int level);
 .proc rls_helper
-        setup_frame
+        enter
         rep     #$30
 
         ; Load level to A
@@ -191,13 +191,13 @@ done:
         jsr     close
 
 failed:
-        restore_frame
+        leave
         rts
 .endproc
 
 ; void rls(char *root_path)
 .proc rls
-        setup_frame
+        enter
         rep     #$30
 
         ; Push 0 as int
@@ -219,7 +219,7 @@ failed:
         ; Call helper
         jsr     rls_helper
 
-        restore_frame
+        leave
         rts
 .endproc
 

@@ -16,7 +16,7 @@
 
 ; ssize_t read(int fd, void *buf, size_t nbyte)
 .proc read
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; fd
@@ -50,7 +50,7 @@
         ply
 
 done:
-        restore_frame
+        leave
         rts
 failed:
         lda     #$FFFF  ; -1
@@ -59,7 +59,7 @@ failed:
 
 ; ssize_t write(int fd, const void *buf, size_t nbyte)
 .proc write
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; fd
@@ -93,7 +93,7 @@ failed:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 failed:
         lda     #$FFFF  ; -1
@@ -102,7 +102,7 @@ failed:
 
 ; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
-        setup_frame
+        enter
         rep     #$30
 
         ; Allocate result FSNode
@@ -171,7 +171,7 @@ table_done:
         pla
 
 done:
-        restore_frame
+        leave
         rts
 
 failed_traverse_path:
@@ -187,7 +187,7 @@ failed_malloc:
 
 ; int close(int fd)
 .proc close
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; fd
@@ -235,7 +235,7 @@ failed_malloc:
         stz     a:0,x
 
 done:
-        restore_frame
+        leave
         rts
 
 failed:
@@ -245,7 +245,7 @@ failed:
 
 ; int readdir(unsigned int fd, unsigned int count, struct DirEnt *result)
 .proc readdir
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:3 ; fd
@@ -277,7 +277,7 @@ failed:
         ply
 
 done:
-        restore_frame
+        leave
         rts
 
 failed:

@@ -10,7 +10,7 @@
 
 ; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
-        setup_frame
+        enter
         rep     #$30
 
         lda     z:7 ; mode
@@ -22,6 +22,6 @@
 
         cop     $03
 
-        restore_frame
+        leave
         rts
 .endproc
