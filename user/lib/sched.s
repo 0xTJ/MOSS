@@ -10,7 +10,7 @@
 ; int clone(int (*fn)(void *), void *child_stack, int flags, void *arg, ... /* pid_t *ptid, void *newtls, pid_t *ctid */)
 .export clone
 .proc clone
-        enter
+        enter_nostackvars
         rep     #$30
 
         lda     z:15    ; ctid
@@ -30,6 +30,6 @@
         
         cop     $06
 
-        leave
+        leave_nostackvars
         rts
 .endproc

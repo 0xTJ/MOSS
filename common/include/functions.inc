@@ -62,7 +62,24 @@
 .charmap    $79, $79
 .charmap    $7A, $7A
 
-.macro enter
+.macro enter stack_space_in
+        stack_space = stack_space_in
+        rep     #$30
+        phd
+        tsc
+        tcd
+.endmacro
+
+.macro leave
+        rep     #$30
+        tay
+        tdc
+        tcs
+        pld
+        tya
+.endmacro
+
+.macro enter_nostackvars
         rep     #$30
         ; Store D on stack and set new stack frame
         tsc
@@ -70,28 +87,17 @@
         tcd
 .endmacro
 
-.macro leave preserve_a
-        ; Setting preserve_a will obliterate Y instead of A
-        ; Defaults to preserving A
-
+.macro leave_nostackvars
         rep     #$30
 
-.if .blank(preserve_a)
         tay
-.elseif preserve_a
-        tay
-.endif
 
         tdc
         sub     #2
         tcs
         pld
 
-.if .blank(preserve_a)
         tya
-.elseif preserve_a
-        tya
-.endif
 .endmacro
 
 .macro hard_reset

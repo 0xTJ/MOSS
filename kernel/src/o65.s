@@ -19,7 +19,7 @@ tmp_str:
 
 ; void o65_load(const uint8_t *o65, uint8_t *tbase, uint8_t *dbase, uint8_t *bbase, uint8_t *zbase)
 .proc o65_load
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Stack variables:
@@ -364,13 +364,13 @@ data_type_word:
 
 done_reloc_data_loop:
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; void *o65_segments_p(void *o65)
 .proc o65_segments_p
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Skip header
@@ -401,13 +401,13 @@ done_loop:
         ; Return the pointer past the last header option checked
         inc
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; uint8_t *o65_reloc_tab_p(uint8_t *o65)
 .proc o65_reloc_tab_p
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Skip to beginning of segments
@@ -461,6 +461,6 @@ loop:
 done_loop:
         lda     z:3 ; o65
 
-        leave
+        leave_nostackvars
         rts
 .endproc

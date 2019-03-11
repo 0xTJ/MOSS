@@ -8,7 +8,7 @@ TARGET = user.o65
 AS_SRC := $(wildcard src/*.s) $(wildcard src/*/*.s) $(wildcard lib/*.s) $(wildcard lib/*/*.s) $(wildcard ../common/lib/*.s) $(wildcard ../common/lib/*/*.s)
 OBJS := $(AS_SRC:.s=.o)
 DEPS := $(OBJS:.o=.d)
-DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(wildcard src/*.d) $(wildcard src/*\*.d) $(wildcard src/*.lst) $(wildcard src/*\*.lst))) $(TARGET)
+DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(wildcard src/*.d) $(wildcard src/*\*.d) $(wildcard src/*.lst) $(wildcard src/*\*.lst) $(wildcard ../common/lib/*.o) $(wildcard ../common/lib/*.d) $(wildcard ../common/lib/*.lst))) $(TARGET)
 
 all: $(TARGET)
 

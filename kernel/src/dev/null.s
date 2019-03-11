@@ -41,12 +41,12 @@ null_name:
 
 ; ssize_t dev_null_write(const void *buf, size_t nbytes, off_t offset)
 .proc dev_null_write
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Accept all bytes written
         lda     z:5
 
-        leave
+        leave_nostackvars
         rts
 .endproc

@@ -10,7 +10,7 @@
 
 ; ssize_t read(int fd, void *buf, size_t nbyte)
 .proc read
-        enter
+        enter_nostackvars
         rep     #$30
 
         lda     z:7 ; nbyte
@@ -22,13 +22,13 @@
         
         cop     $04
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; ssize_t write(int fd, const void *buf, size_t nbyte)
 .proc write
-        enter
+        enter_nostackvars
         rep     #$30
 
         lda     z:7 ; nbyte
@@ -40,13 +40,13 @@
         
         cop     $05
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; int close(int fd)
 .proc close
-        enter
+        enter_nostackvars
         rep     #$30
 
         lda     z:3 ; fd
@@ -54,6 +54,6 @@
         
         cop     $0A
 
-        leave
+        leave_nostackvars
         rts
 .endproc

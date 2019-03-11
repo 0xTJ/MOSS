@@ -50,7 +50,7 @@ user_o65:
 
 ; ssize_t dev_prgload_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
 .proc dev_prgload_read
-        enter
+        enter_nostackvars
         rep     #$10
         sep     #$20
 
@@ -77,6 +77,6 @@ done_loop:
         rep     #$30
         lda     z:7 ; nbytes
 
-        leave
+        leave_nostackvars
         rts
 .endproc

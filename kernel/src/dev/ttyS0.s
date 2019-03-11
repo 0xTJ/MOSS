@@ -91,7 +91,7 @@ skip_wrap_buff:
         sty     rx_tail
 
 done:
-        exit_isr
+        leave_isr
         rti
 .endproc
 
@@ -139,7 +139,7 @@ skip_wrap_buff:
 
 done:
         ; Return
-        exit_isr
+        leave_isr
         rti
 
 empty_buffer:
@@ -253,7 +253,7 @@ turn_off:
 
 ; ssize_t dev_ttyS0_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
 .proc dev_ttyS0_read
-        enter
+        enter_nostackvars
         rep     #$10
         sep     #$20
 
@@ -299,14 +299,14 @@ done_loop:
         rep     #$30
         lda     z:7 ; nbytes
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; ssize_t dev_ttyS0_write(struct CharDriver *device, const void *buf, size_t nbytes, off_t offset)
 .global dev_ttyS0_write
 .proc dev_ttyS0_write
-        enter
+        enter_nostackvars
 
         rep     #$10
         sep     #$20
@@ -359,6 +359,6 @@ done_loop:
         rep     #$30
         lda     z:7 ; nbytes
 
-        leave
+        leave_nostackvars
         rts
 .endproc

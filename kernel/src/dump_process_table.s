@@ -40,7 +40,7 @@ prg_cnt_str:
 
 ; void print_process(struct Process *proc)
 .proc print_process
-        enter
+        enter_nostackvars
         rep     #$30
 
         pea     10
@@ -161,7 +161,7 @@ prg_cnt_str:
         ply
         ply
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 

@@ -47,7 +47,7 @@ dev_root_dir:
 
 ; struct Device *dev_from_name(char *name)
 .proc dev_from_name
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Push name to compare
@@ -80,13 +80,13 @@ skip_first_loop:
 
 done:
         txa
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; unsigned int fs_dev_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_read
-        enter
+        enter_nostackvars
         rep     #$30
 
         ldx     z:3 ; node
@@ -125,13 +125,13 @@ chardevice:
 
 failed:
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; unsigned int fs_dev_write(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_write
-        enter
+        enter_nostackvars
         rep     #$30
 
         ldx     z:3 ; node
@@ -170,13 +170,13 @@ chardevice:
 
 failed:
 
-        leave
+        leave_nostackvars
         rts
 .endproc
 
 ; int fs_dev_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_dev_readdir
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Load device list first item
@@ -223,7 +223,7 @@ done_loop:
         lda     #0
 
 done:
-        leave
+        leave_nostackvars
         rts
 
 failed:
@@ -233,7 +233,7 @@ failed:
 
 ; int fs_dev_finddir(struct FSNode *node, char *name, struct FSNode *result)
 .proc fs_dev_finddir
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Get device pointer from name
@@ -264,7 +264,7 @@ failed:
         lda     #0
 
 done:
-        leave
+        leave_nostackvars
         rts
 
 failed:
@@ -289,7 +289,7 @@ failed:
 
 ; void register_driver(struct CharDriver *driver, const char *name, int type)
 .proc register_driver
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Allocate driver struct and put address in X
@@ -380,6 +380,6 @@ failed_device_type:
 failed_driver_alloc:
 
 done:
-        leave
+        leave_nostackvars
         rts
 .endproc

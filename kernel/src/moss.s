@@ -57,7 +57,7 @@ O65_SIZE = 2000
 
 ; int runO65(uint8_t *o65)
 .proc runO65
-        enter
+        enter_nostackvars
         rep     #$30
 
         ; Allocate space for stack variables
@@ -170,7 +170,7 @@ not_zero_stack:
         ply
 
 done:
-        leave
+        leave_nostackvars
         rts
 
 failed:

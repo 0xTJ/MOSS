@@ -7,7 +7,7 @@
         phb
 .endmacro
 
-.macro exit_isr
+.macro leave_isr
         rep     #$30
         plb
         pld

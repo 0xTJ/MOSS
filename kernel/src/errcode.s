@@ -10,7 +10,7 @@
 ; void error_code(int code)
 .proc error_code
         sei
-        enter
+        enter_nostackvars
         
         rep     #$30
         
@@ -23,6 +23,6 @@
 forever_loop:
         bra     forever_loop
         
-        leave
+        leave_nostackvars
         rts
 .endproc

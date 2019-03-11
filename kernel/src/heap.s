@@ -35,7 +35,7 @@
 ; void *malloc(size_t size)
 .export malloc
 .proc malloc
-        enter
+        enter_nostackvars
 
         rep     #$30
         lda     z:3
@@ -94,7 +94,7 @@ skip_resize:
 
 not_found:   ; Y will contain NULL if it was not found
         tya
-        leave
+        leave_nostackvars
         rts
 .endproc
 
@@ -102,13 +102,13 @@ not_found:   ; Y will contain NULL if it was not found
 ; void free(void *ptr)
 .export free
 .proc free
-        enter
+        enter_nostackvars
 
         lda     z:3
         sub     #.sizeof(HeapTag)
         tax
         stz     a:HeapTag::flags,x
 
-        leave
+        leave_nostackvars
         rts
 .endproc
