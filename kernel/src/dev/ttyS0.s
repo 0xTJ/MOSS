@@ -289,7 +289,7 @@ skip_wrap_buff:
         ; Increment buffer pointer and decrement number of bytes
         ldx     z:5 ; buf
         inx
-        sta     z:5 ; buf
+        stx     z:5 ; buf
         dey
 
         bra     loop
