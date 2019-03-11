@@ -14,12 +14,15 @@
 .include "o65.inc"
 .include "stdio.inc"
 .include "stdlib.inc"
+.include "unistd.inc"
 .include "errcode.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
 
 .import F_CLK: far
+
+O65_SIZE = 2000
 
 .code
 
@@ -192,7 +195,34 @@ failed:
         ; Setup system tick timer
         jsr     setup_systick_timer
 
-        pea     user_o65
+        ; Open prgload device
+        pea     O_RDONLY
+        pea     dev_prgload_path
+        cop     3
+        rep     #$30
+        ply
+        ply
+
+        ; Push prgload fd for closing later
+        pha
+
+        ; Read program to buffer
+        pea     O65_SIZE
+        pea     tmp
+        pha
+        jsr     read
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Close prgload fd
+        jsr     close
+        rep     #$30
+        ply
+
+        ; Run program
+        pea     tmp
         jsr     runO65
         rep     #$30
         ply
@@ -201,14 +231,12 @@ loop:
         bra     loop
 .endproc
 
-.data
+.bss
 
-tmp_str:
-        .res 64
+tmp:
+        .res    O65_SIZE
 
 .rodata
 
-user_o65:
-        .incbin "user.o65"
-dev_ttyS0_path:
-        .asciiz "/dev/ttyS0"
+dev_prgload_path:
+        .asciiz "/dev/prgload"
