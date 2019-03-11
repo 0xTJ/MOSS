@@ -14,7 +14,7 @@
 .endstruct
 
 .segment "HEAP"
-        .res    $2000
+        .res    $3000
 
 .import __HEAP_LOAD__
 .import __HEAP_SIZE__

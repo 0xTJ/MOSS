@@ -203,13 +203,24 @@ failed:
         ply
         ply
 
-        ; Push prgload fd for closing later
+        ; Push prgload fd for later
         pha
+
+        pea     O65_SIZE
+        jsr     malloc
+        rep     #$30
+        ply
+
+        ; Load prgload fd to X and push allocated buffer twice to run and free
+        plx
+        pha
+        pha
+        phx
 
         ; Read program to buffer
         pea     O65_SIZE
-        pea     tmp
         pha
+        phx
         jsr     read
         rep     #$30
         ply
@@ -222,19 +233,18 @@ failed:
         ply
 
         ; Run program
-        pea     tmp
         jsr     runO65
+        rep     #$30
+        ply
+
+        ; Free load buffer
+        jsr     free
         rep     #$30
         ply
 
 loop:
         bra     loop
 .endproc
-
-.bss
-
-tmp:
-        .res    O65_SIZE
 
 .rodata
 
