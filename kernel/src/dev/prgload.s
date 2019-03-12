@@ -26,6 +26,7 @@ user_o65:
 
 .constructor dev_prgload_init
 .proc dev_prgload_init
+        enter
         rep     #$30
 
         ; Load driver struct address to X
@@ -45,20 +46,21 @@ user_o65:
         ply
         ply
 
+        leave
         rts
 .endproc
 
 ; ssize_t dev_prgload_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
 .proc dev_prgload_read
-        enter_nostackvars
+        enter
         rep     #$10
         sep     #$20
 
-        ldx     5 ; buf
+        ldx     z:arg 2 ; buf
         ldy     #0
 
 loop:
-        cpy     z:7 ; nbytes
+        cpy     z:arg 4 ; nbytes
         beq     done_loop
 
         lda     a:user_o65,y
@@ -75,8 +77,8 @@ loop:
 done_loop:
 
         rep     #$30
-        lda     z:7 ; nbytes
+        lda     z:arg 4 ; nbytes
 
-        leave_nostackvars
+        leave
         rts
 .endproc

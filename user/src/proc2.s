@@ -8,6 +8,7 @@
 .include "stdio.inc"
 .include "dirent.inc"
 .include "fcntl.inc"
+.include "builtin.inc"
 .include "stdlib.inc"
 .include "string.inc"
 .include "unistd.inc"
@@ -19,7 +20,7 @@ tmp_dirent:
 tmp_str:
         .asciiz "/"
         .res    62
-        
+
 .rodata
 
 level_string:
@@ -31,18 +32,18 @@ four_spaces_string:
 
 ; void rls_helper(char *abs_str, char *rel_str, int level);
 .proc rls_helper
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load level to A
-        lda     z:7 ; level
+        lda     z:arg 4 ; level
 
         ; If level == 0, is root and don't print an entry
         bze     done_printing_entry
 
         ; A = level - 1
         dec
-        
+
         ; Skip printing spaces if level was 1
         bze     done_space_loop
 
@@ -61,7 +62,7 @@ space_loop:
         ; Pull current 4 spaces to print left from stack and decrement
         pla
         dec
-        
+
         ; If there are spaces left to print, loop
         bnz     space_loop
 
@@ -76,7 +77,7 @@ done_space_loop:
         ply
 
         ; Write only the name of the current entry
-        lda     z:5 ; rel_str
+        lda     z:arg 2 ; rel_str
         pha
         jsr     puts
         rep     #$30
@@ -86,7 +87,7 @@ done_printing_entry:
 
         ; Open the current file
         pea     O_RDONLY
-        lda     z:3 ; abs_str
+        lda     z:arg 0 ; abs_str
         pha
         jsr     open
         rep     #$30
@@ -128,15 +129,15 @@ loop:
         cmp     #0
         jne     done
 
-        lda     z:5 ; rel_str
+        lda     z:arg 2 ; rel_str
         pha
         jsr     strlen
         rep     #$30
         ply
-        add     z:5 ; rel_str
+        add     z:arg 2 ; rel_str
         pha
 
-        ; Add slash to end of current pathq
+        ; Add slash to end of current path
         tax
         sep     #$20
         lda     #'/'
@@ -145,9 +146,9 @@ loop:
 
         ; Load latest pointer in strong from stack to A
         lda     1,s
-        
+
         ; Increment level for next recursion
-        ldx     z:7 ; level
+        ldx     z:arg 4 ; level
         inx
         phx
 
@@ -164,7 +165,7 @@ loop:
         ply
 
         ; Push absolute path
-        ldy     z:3 ; abs_str
+        ldy     z:arg 0 ; abs_str
         phy
 
         ; Call this function recursively
@@ -191,20 +192,20 @@ done:
         jsr     close
 
 failed:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void rls(char *root_path)
 .proc rls
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Push 0 as int
         pea     0
 
         ; Push end of root_path
-        lda     z:3 ; root_path
+        lda     arg 0 ; root_path
         pha
         jsr     strlen
         rep     #$30
@@ -213,13 +214,119 @@ failed:
         pha
 
         ; Push root_path
-        lda     z:3 ; root_path
+        lda     z:arg 0 ; root_path
         pha
 
         ; Call helper
         jsr     rls_helper
 
-        leave_nostackvars
+        leave
+        rts
+.endproc
+
+.proc test
+        enter   6
+        rep     #$30
+
+        pea     16
+        pea     tmp_str
+        lda     z:var 0
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     16
+        pea     tmp_str
+        lda     z:var 2
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     16
+        pea     tmp_str
+        lda     z:var 4
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     16
+        pea     tmp_str
+        lda     z:stored_direct
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     16
+        pea     tmp_str
+        lda     z:return_addr
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     16
+        pea     tmp_str
+        lda     z:arg 0
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        pea     16
+        pea     tmp_str
+        lda     z:arg 2
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        rep     #$30
+        ply
+
+        leave
         rts
 .endproc
 
@@ -227,6 +334,25 @@ failed:
 .proc proc2
         pea     tmp_str
         jsr     rls
+
+        pea     $1234
+        pea     $5678
+        jsr     test
+        
+        pea     $5676
+        jsr     __divide_s8_s8
+        ; pea     16
+        ; pea     tmp_str
+        ; pha
+        ; jsr     itoa
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
+        ; pea     tmp_str
+        ; jsr     puts
+        ; rep     #$30
+        ; ply
 
 loop:
         jsr     getchar

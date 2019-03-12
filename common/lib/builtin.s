@@ -5,6 +5,27 @@
 
 .include "functions.inc"
 
+.macro enter_nostackvars
+        rep     #$30
+        ; Store D on stack and set new stack frame
+        tsc
+        phd
+        tcd
+.endmacro
+
+.macro leave_nostackvars
+        rep     #$30
+
+        tay
+
+        tdc
+        sub     #2
+        tcs
+        pld
+
+        tya
+.endmacro
+
 .code
 
 ; cdiv_t __divide_s8_s8(char dividend, char divisor)

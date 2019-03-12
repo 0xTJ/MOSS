@@ -67,7 +67,7 @@ init:
         jsr     main
 
 exit:
-        ; jsr     donelib
+        jsr     donelib
 @brkloop:
         bra     @brkloop
 

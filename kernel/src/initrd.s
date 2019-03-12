@@ -44,6 +44,7 @@ initrd_dev_dir:
 ; void initrd_init(void)
 .constructor initrd_init, 6
 .proc initrd_init
+        enter
         rep     #$30
 
         pea     initrd_root_dir
@@ -53,20 +54,21 @@ initrd_dev_dir:
         ply
         ply
 
+        leave
         rts
 .endproc
 
 ; int fs_initrd_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_initrd_readdir
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:5     ; index
+        lda     z:arg 2 ; index
         cmp     #0
         jne     not_0
 
         ; Push result DirEnt struct pointer
-        lda     z:7
+        lda     z:arg 4 ; result
         pha
 
         ; Push source string
@@ -94,7 +96,7 @@ not_0:
         bra     failed
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:
@@ -104,11 +106,10 @@ failed:
 
 ; int fs_initrd_finddir(struct FSNode *node, char *name, struct FSNode *result)
 .proc fs_initrd_finddir
-        enter_nostackvars
-
+        enter
         rep     #$30
 
-        lda     z:5 ; name
+        lda     z:arg 2 ; name
         pha
 
         pea     root_name
@@ -132,7 +133,7 @@ try_next_0:
         ; Use memmove to fill result
         pea     .sizeof(FSNode)
         pea     initrd_dev_dir
-        lda     z:7 ; result
+        lda     z:arg 4 ; result
         pha
         jsr     memmove
         rep     #$30
@@ -148,7 +149,7 @@ try_next_1:
         lda     #$FFFF
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 

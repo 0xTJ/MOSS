@@ -35,10 +35,10 @@
 ; void *malloc(size_t size)
 .export malloc
 .proc malloc
-        enter_nostackvars
+        enter
 
         rep     #$30
-        lda     z:3
+        lda     z:arg 0 ; size
         ldx     #__HEAP_LOAD__
         jmp     skip_next_inc
 
@@ -61,16 +61,16 @@ skip_next_inc:
         ; Resize fragment
         txa
         add     #.sizeof(HeapTag)
-        add     z:3
+        add     z:arg 0 ; size
         tay
         ; Y contains address of heap tag for new fragment
 
         ; Update sizes
         lda     a:HeapTag::size,x ; Size of the fragment to be split
         sub     #.sizeof(HeapTag)
-        sub     z:3
+        sub     z:arg 0 ; size
         sta     a:HeapTag::size,y ; Size of new fragment
-        lda     z:3
+        lda     z:arg 0 ; size
         sta     a:HeapTag::size,x
 
         ; Update next pointers
@@ -94,7 +94,7 @@ skip_resize:
 
 not_found:   ; Y will contain NULL if it was not found
         tya
-        leave_nostackvars
+        leave
         rts
 .endproc
 
@@ -102,13 +102,13 @@ not_found:   ; Y will contain NULL if it was not found
 ; void free(void *ptr)
 .export free
 .proc free
-        enter_nostackvars
+        enter
 
-        lda     z:3
+        lda     z:arg 0 ; ptr
         sub     #.sizeof(HeapTag)
         tax
         stz     a:HeapTag::flags,x
 
-        leave_nostackvars
+        leave
         rts
 .endproc

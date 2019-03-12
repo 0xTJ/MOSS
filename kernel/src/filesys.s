@@ -35,11 +35,11 @@ root_dir:
 
 ; struct FSNode *follow_mounts(struct FSNode *node)
 .proc follow_mounts
-        enter_nostackvars
+        enter
 
         rep     #$30
 
-        lda     z:3
+        lda     z:arg 0
         tax
 
         bra     skip_first
@@ -54,16 +54,16 @@ skip_first:
         beq     loop
 
         txa
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; char *follow_mounts(const char *path)
 .proc skip_slashes
-        enter_nostackvars
+        enter
         rep     #$30
 
-        ldx     z:3 ; path
+        ldx     z:arg 0 ; path
 
         ; Check first char of path for '/', and ignore it in a loop
         sep     #$20
@@ -78,41 +78,41 @@ done_loop:
         rep     #$30
         txa
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
 ; Both nodes can be the same, node is read before result is overwritten
 .proc traverse_rel_path
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; User follow_mounts to update node in arguments
-        lda     z:3 ; node
+        lda     z:arg 0 ; node
         pha
         jsr     follow_mounts
         rep     #$30
         ply
-        sta     z:3 ; node
+        sta     z:arg 0 ; node
 
         ; Skip leading slashes in path and write back
-        lda     z:5 ; path
+        lda     z:arg 2 ; path
         pha
         jsr     skip_slashes
         rep     #$30
         ply
-        sta     z:5
+        sta     z:arg 2
 
         ; Check for path being empty and jump to empty_path if it is.
-        ldx     z:5 ; node
+        ldx     z:arg 2 ; node
         sep     #$20
         lda     a:0,x
         jeq     empty_path
         rep     #$30
 
         ; Check that node is a directory
-        ldx     z:3 ; node
+        ldx     z:arg 0 ; node
         lda     a:FSNode::flags,x
         cmp     #FS_DIRECTORY
         jne     failed
@@ -128,7 +128,7 @@ done_loop:
         pha
 
         ; Load path to X
-        ldx     z:5
+        ldx     z:arg 2
 
         sep     #$20
 
@@ -178,7 +178,7 @@ done_path_segment:
         inc
 
         ; Push location of result FSNode as result for recursive call
-        lda     z:7
+        lda     z:arg 4
         pha
 
         ; Push pointer in path to stack as path for recursive call
@@ -194,7 +194,7 @@ done_path_segment:
         phx
 
         ; Push starting node
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Call finddir_fs and pull arguments
@@ -214,7 +214,7 @@ done_path_segment:
 
         ; Return with result from recursive call
 done:
-        leave_nostackvars
+        leave
         rts
 
 empty_path:
@@ -222,9 +222,9 @@ empty_path:
 
         ; Move node to result
         pea     .sizeof(FSNode)
-        lda     z:3 ; node
+        lda     z:arg 0 ; node
         pha
-        lda     z:7 ; result
+        lda     z:arg 4 ; result
         pha
         jsr     memmove
         rep     #$30
@@ -246,15 +246,15 @@ failed:
 ; int traverse_abs_path(char *path, struct FSNode *result)
 .export traverse_abs_path
 .proc traverse_abs_path
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Push result node
-        lda     z:5
+        lda     z:arg 2
         pha
 
         ; Load path to X
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check first char of path for '/'
         sep     #$20
@@ -276,7 +276,7 @@ failed:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:
@@ -287,11 +287,11 @@ failed:
 
 ; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
 .proc mount_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load mounted into X
-        ldx     z:5
+        ldx     z:arg 2
 
         ; Check that the mounted is a directory, and not already mounted on
         lda     a:FSNode::flags,x
@@ -304,7 +304,7 @@ failed:
 
         ; Load mount_point into X
         rep     #$30
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Store mounted into mount point's ptr
         tya
@@ -316,30 +316,30 @@ failed:
         sta     a:FSNode::flags,x
 
 invalid_type:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc read_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         lda     a:FSNode::read,x
         bze     done
 
         ; Copy parameters onto current stack
-        lda     z:9
+        lda     z:arg 6
         pha
-        lda     z:7
+        lda     z:arg 4
         pha
-        lda     z:5
+        lda     z:arg 2
         pha
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Jump to file-system-specific read function
@@ -353,30 +353,30 @@ invalid_type:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; unsigned int write_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc write_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         lda     a:FSNode::write,x
         bze     done
 
         ; Copy parameters onto current stack
-        lda     z:9
+        lda     z:arg 6
         pha
-        lda     z:7
+        lda     z:arg 4
         pha
-        lda     z:5
+        lda     z:arg 2
         pha
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Jump to file-system-specific write function
@@ -390,17 +390,17 @@ done:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
 .proc open_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit
         lda     a:FSNode::open,x
@@ -408,12 +408,12 @@ done:
 
         ; Copy parameters onto current stack
         sep     #$20
-        lda     z:6
+        lda     z:arg 3
         pha
-        lda     z:5
+        lda     z:arg 2
         pha
         rep     #$20
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Jump to file-system-specific open function
@@ -431,24 +431,24 @@ done:
         lda     #0
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void close_fs(struct FSNode *node)
 .proc close_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit
         lda     a:FSNode::close,x
         bze     done
 
         ; Copy parameters onto current stack
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Jump to file-system-specific close function
@@ -459,28 +459,28 @@ done:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc readdir_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         lda     a:FSNode::readdir,x
         bze     not_found
 
         ; Copy parameters onto current stack
-        lda     z:7
+        lda     z:arg 4
         pha
-        lda     z:5
+        lda     z:arg 2
         pha
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Jump to file-system-specific readdir function
@@ -493,7 +493,7 @@ done:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 not_found:
@@ -503,22 +503,22 @@ not_found:
 
 ; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
 .proc finddir_fs
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:3
+        ldx     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         lda     a:FSNode::finddir,x
         bze     not_found
 
         ; Copy parameters onto current stack
-        lda     z:7
+        lda     z:arg 4
         pha
-        lda     z:5
+        lda     z:arg 2
         pha
-        lda     z:3
+        lda     z:arg 0
         pha
 
         ; Jump to file-system-specific finddir function
@@ -531,7 +531,7 @@ not_found:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 not_found:

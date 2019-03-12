@@ -22,11 +22,13 @@
 
 .import F_CLK: far
 
-O65_SIZE = 2000
+O65_SIZE = 3000
 
 .code
 
 .proc setup_systick_timer
+        enter
+
         sep     #$20
 
         ; Disable T2
@@ -52,27 +54,23 @@ O65_SIZE = 2000
         lda     #1 << 2
         tsb     TER
 
+        leave
         rts
 .endproc
 
 ; int runO65(uint8_t *o65)
 .proc runO65
-        enter_nostackvars
+        enter   10
         rep     #$30
 
-        ; Allocate space for stack variables
-        tsc
-        sub     #10
-        tcs
-
-        ; 1: void *text_base
-        ; 3: void *data_base
-        ; 5: void *bss_base
-        ; 7: void *zero_base
-        ; 9: void *stack_init
+        ; 0: void *text_base
+        ; 2: void *data_base
+        ; 4: void *bss_base
+        ; 6: void *zero_base
+        ; 8: void *stack_init
 
         ; Allocate text space and store pointer to stack
-        ldx     z:3
+        ldx     z:arg 0 ; o65
         lda     a:O65Header::tlen,x
         pha
         jsr     malloc
@@ -80,10 +78,10 @@ O65_SIZE = 2000
         ply
         cmp     #0
         jeq     failed
-        sta     1,s ; text_base
+        sta     z:var 0 ; text_base
 
         ; Allocate data space and store pointer to stack
-        ldx     z:3
+        ldx     z:arg 0 ; o65
         lda     a:O65Header::dlen,x
         pha
         jsr     malloc
@@ -91,10 +89,10 @@ O65_SIZE = 2000
         ply
         cmp     #0
         jeq     failed
-        sta     3,s ; data_base
+        sta     z:var 2 ; data_base
 
         ; Allocate bss space and store pointer to stack
-        ldx     z:3
+        ldx     z:arg 0 ; o65
         lda     a:O65Header::blen,x
         pha
         jsr     malloc
@@ -102,10 +100,10 @@ O65_SIZE = 2000
         ply
         cmp     #0
         jeq     failed
-        sta     5,s ; bss_base
+        sta     z:var 4 ; bss_base
 
         ; Allocate zero space and store pointer to stack
-        ldx     z:3
+        ldx     z:arg 0 ; o65
         lda     a:O65Header::zlen,x
         pha
         jsr     malloc
@@ -113,10 +111,10 @@ O65_SIZE = 2000
         ply
         cmp     #0
         jeq     failed
-        sta     7,s ; zero_base
+        sta     z:var 6 ; zero_base
 
         ; Allocate stack space and store pointer to stack
-        ldx     z:3
+        ldx     z:arg 0 ; o65
         lda     a:O65Header::stack,x
         bnz     not_zero_stack
         lda     #$200
@@ -131,18 +129,18 @@ not_zero_stack:
         jeq     failed
         add     1,s
         ply
-        sta     9,s ; stack_init
+        sta     z:var 8 ; stack_init
 
         ; Call o65 loader
-        lda     7,s ; zero_base
+        lda     z:var 6 ; zero_base
         pha
-        lda     7,s ; bss_base
+        lda     z:var 4 ; bss_base
         pha
-        lda     7,s ; data_base
+        lda     z:var 2 ; data_base
         pha
-        lda     7,s ; text_base
+        lda     z:var 0 ; text_base
         pha
-        lda     z:3 ; o65
+        lda     z:arg 0 ; o65
         pha
         jsr     o65_load
         rep     #$30
@@ -152,15 +150,12 @@ not_zero_stack:
         ply
         ply
 
-        ; Load parameters for clone
-        lda     9,s ; stack_base
-        tax
-        lda     1,s ; text_base
-
         ; Create new process with clone
         pea     0
         pea     0
-        phx
+        lda     z:var 8 ; stack_base
+        pha
+        lda     z:var 0 ; text_base
         pha
         jsr     clone
         rep     #$30
@@ -170,7 +165,7 @@ not_zero_stack:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:

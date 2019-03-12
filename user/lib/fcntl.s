@@ -10,18 +10,18 @@
 
 ; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:7 ; mode
+        lda     z:arg 4 ; mode
         pha
-        lda     z:5 ; flags
+        lda     z:arg 2 ; flags
         pha
-        lda     z:3 ; pathname
+        lda     z:arg 0 ; pathname
         pha
 
         cop     $03
 
-        leave_nostackvars
+        leave
         rts
 .endproc

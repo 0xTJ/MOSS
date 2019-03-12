@@ -30,6 +30,7 @@ disable_scheduler:
 
 .constructor init_processes
 .proc init_processes
+        enter
         rep     #$30
 
         pea     .sizeof(Process)
@@ -68,6 +69,7 @@ disable_scheduler:
         stz     disable_scheduler
 
 done:
+        leave
         rts
 
 failed:
@@ -142,6 +144,7 @@ done:
 ; Properly setting SP must be managed by calling function.
 ; Set to not running.
 .proc clone_current_proc
+        enter
         rep     #$30
 
         ; Disable interrupts to safely modify current process
@@ -205,6 +208,7 @@ done:
         ; Enable interrupts if they were disabled
         plp
 
+        leave
         rts
 
 failed:
@@ -215,14 +219,14 @@ failed:
 ; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
 ; Assumes Program Bank is $00
 .proc setup_proc
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Lock scheduler mutex
         inc     disable_scheduler
 
         ; Get address to store initial stack + 1 in X
-        lda     z:5 ; initial_sp
+        lda     z:arg 2 ; initial_sp
         sub     #.sizeof(ISRFrame) - 1
         tax
 
@@ -235,12 +239,12 @@ failed:
         stz     a:ISRFrame::dir_pag,x
 
         ; Store initial PC on process's stack
-        lda     z:7     ; initial_pc
+        lda     z:arg 4 ; initial_pc
         sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
 
         ; Put process's SP in A and struct pointer in X
         txa
-        ldx     z:3
+        ldx     z:arg 0 ; proc
 
         ; Store process's SP in struct
         dec
@@ -252,12 +256,13 @@ failed:
         ; Unlock scheduler mutex
         dec     disable_scheduler
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; struct Process *create_proc(void)
 .proc create_proc
+        enter
         rep     #$30
 
         inc     disable_scheduler
@@ -355,23 +360,25 @@ found_empty_proc:   ; X contains new PID * 2
         dec     disable_scheduler
 
         ; Return with new PID in A
+        leave
         rts
 .endproc
 
+; struct Process *find_previous_proc(struct Process *proc)
 .proc find_previous_proc
-        enter_nostackvars
+        enter
         rep     #$30
 
         inc     disable_scheduler
 
-        ldx     z:3
+        ldx     z:arg 0 ; proc
 
 loop:
         ; Get next of this one
         lda     a:Process::next,x
 
         ; Compare to the one to be found
-        cmp     z:3
+        cmp     z:arg 0 ; proc
 
         ; If not the same, move next to X and repeat
         beq     found_prev
@@ -381,19 +388,19 @@ loop:
 found_prev:
         dec     disable_scheduler
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void term_proc(int pid)
 .proc term_proc
-        enter_nostackvars
+        enter
         rep     #$30
 
         inc     disable_scheduler
 
         ; Load PID to destroy
-        lda     z:3
+        lda     z:arg 0 ; pid
 
         ; Get address of process struct into X
         asl
@@ -413,7 +420,7 @@ child_ppid_loop:
         bze     skip
         lda     a:Process::ppid,y
         ; Check if process has PPID as process being deleted
-        cmp     z:3 ; pid
+        cmp     z:arg 0 ; pid
         bne     skip
         ; Set PPID to 1
         lda     #1
@@ -429,19 +436,19 @@ skip:
 
         dec     disable_scheduler
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void destroy_proc(int pid)
 .proc destroy_proc
-        enter_nostackvars
+        enter
         rep     #$30
 
         inc     disable_scheduler
 
         ; Load PID to destroy
-        lda     z:3
+        lda     z:arg 0 ; pid
 
         ; Get address of process struct into X
         asl
@@ -479,7 +486,7 @@ skip:
         phx
 
         ; Remove process from process table
-        lda     z:3
+        lda     z:arg 0 ; pid
         asl
         tax
         lda     #0
@@ -492,6 +499,6 @@ skip:
 
         dec     disable_scheduler
 
-        leave_nostackvars
+        leave
         rts
 .endproc

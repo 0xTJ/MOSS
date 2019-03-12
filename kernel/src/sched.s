@@ -11,7 +11,7 @@
 ; int clone(int (*fn)(void *), void *child_stack, int flags, void *arg, ... /* pid_t *ptid, void *newtls, pid_t *ctid */)
 .export clone
 .proc clone
-        enter_nostackvars
+        enter
         rep     #$30
 
         inc     disable_scheduler
@@ -21,9 +21,9 @@
         ; Push new process struct
         pha
 
-        ldx     z:3 ; fn
+        ldx     z:arg 0 ; fn
         phx
-        ldx     z:5 ; child_stack
+        ldx     z:arg 2 ; child_stack
         phx
         pha
         jsr     setup_proc
@@ -40,6 +40,6 @@
         sta     a:Process::state,x
         dec     disable_scheduler
 
-        leave_nostackvars
+        leave
         rts
 .endproc

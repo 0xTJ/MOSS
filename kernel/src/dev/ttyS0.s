@@ -170,6 +170,7 @@ turn_off:
 
 .constructor dev_ttyS0_init
 .proc dev_ttyS0_init
+        enter
         sep     #$20
 
         ; Setup Timer 3
@@ -248,16 +249,17 @@ turn_off:
         ply
         ply
 
+        leave
         rts
 .endproc
 
 ; ssize_t dev_ttyS0_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
 .proc dev_ttyS0_read
-        enter_nostackvars
+        enter
         rep     #$10
         sep     #$20
 
-        ldy     z:7 ; nbytes
+        ldy     z:arg 4 ; nbytes
 
 loop:
         cpy     #0
@@ -284,12 +286,12 @@ skip_wrap_buff:
         stx     rx_head
 
         ; Store received byte in output buffer
-        sta     (5) ; *buf
+        sta     (arg 2) ; *buf
 
         ; Increment buffer pointer and decrement number of bytes
-        ldx     z:5 ; buf
+        ldx     z:arg 2 ; buf
         inx
-        stx     z:5 ; buf
+        stx     z:arg 2 ; buf
         dey
 
         bra     loop
@@ -297,28 +299,27 @@ skip_wrap_buff:
 done_loop:
 
         rep     #$30
-        lda     z:7 ; nbytes
+        lda     z:arg 4 ; nbytes
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; ssize_t dev_ttyS0_write(struct CharDriver *device, const void *buf, size_t nbytes, off_t offset)
 .global dev_ttyS0_write
 .proc dev_ttyS0_write
-        enter_nostackvars
-
+        enter
         rep     #$10
         sep     #$20
 
-        ldy     z:7 ; nbytes
+        ldy     z:arg 4 ; nbytes
 
 loop:
         cpy     #0
         beq     done_loop
 
         ; Load a byte from input buffer
-        lda     (5) ; *buf
+        lda     (arg 2) ; *buf
 
         ; Load tail of TX buffer
         ldx     tx_tail
@@ -343,9 +344,9 @@ skip_wrap_buff:
         stx     tx_tail
 
         ; Increment buffer index and decrement number of bytes
-        ldx     z:5 ; buf
+        ldx     z:arg 2 ; buf
         inx
-        stx     z:5 ; buf
+        stx     z:arg 2 ; buf
         dey
 
         ; Bootstrap transmission by enabling transmitter
@@ -357,8 +358,8 @@ skip_wrap_buff:
 done_loop:
 
         rep     #$30
-        lda     z:7 ; nbytes
+        lda     z:arg 4 ; nbytes
 
-        leave_nostackvars
+        leave
         rts
 .endproc

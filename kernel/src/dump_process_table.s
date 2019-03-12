@@ -40,7 +40,7 @@ prg_cnt_str:
 
 ; void print_process(struct Process *proc)
 .proc print_process
-        enter_nostackvars
+        enter
         rep     #$30
 
         pea     10
@@ -50,7 +50,7 @@ prg_cnt_str:
         jsr     puts
         rep     #$30
         ply
-        ldx     z:3 ; proc
+        ldx     z:arg 0 ; proc
         lda     a:Process::pid,x
         pha
         jsr     itoa
@@ -65,7 +65,7 @@ prg_cnt_str:
         jsr     puts
         rep     #$30
         ply
-        ldx     z:3 ; proc
+        ldx     z:arg 0 ; proc
         lda     a:Process::ppid,x
         pha
         jsr     itoa
@@ -80,7 +80,7 @@ prg_cnt_str:
         jsr     puts
         rep     #$30
         ply
-        ldx     z:3 ; proc
+        ldx     z:arg 0 ; proc
         lda     a:Process::state,x
         pha
         jsr     itoa
@@ -100,7 +100,7 @@ prg_cnt_str:
         jsr     puts
         rep     #$30
         ply
-        ldx     z:3 ; proc
+        ldx     z:arg 0 ; proc
         lda     a:Process::stack_p,x
         pha
         jsr     itoa
@@ -115,7 +115,7 @@ prg_cnt_str:
         ; jsr     puts
         ; rep     #$30
         ; ply
-        ; lda     z:3 ; proc
+        ; lda     z:arg 0 ; proc
         ; pha
         ; jsr     itoa
         ; rep     #$30
@@ -129,7 +129,7 @@ prg_cnt_str:
         ; jsr     puts
         ; rep     #$30
         ; ply
-        ; ldx     z:3 ; proc
+        ; ldx     z:arg 0 ; proc
         ; lda     a:Process::next,x
         ; pha
         ; jsr     itoa
@@ -144,7 +144,7 @@ prg_cnt_str:
         jsr     puts
         rep     #$30
         ply
-        ldx     z:3 ; proc
+        ldx     z:arg 0 ; proc
         lda     a:Process::stack_p,x
         tax
         dex     ; Get base of ISR frame
@@ -161,12 +161,13 @@ prg_cnt_str:
         ply
         ply
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void dump_process_table(void)
 .proc dump_process_table
+        enter
         rep     #$30
 
         ldx     #0
@@ -201,5 +202,6 @@ skip:
 
         dec     disable_scheduler
 
+        leave
         rts
 .endproc

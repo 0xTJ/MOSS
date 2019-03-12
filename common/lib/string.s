@@ -11,14 +11,14 @@
 ; char *strcpy(char *dest, const char *src)
 .export strcpy
 .proc strcpy
-        enter_nostackvars
+        enter
 
         sep     #$20    ; Set main data to 8-bit
         rep     #$10    ; Set index registers to 16-bit
 
         ; Load Y with dest, X with src
-        ldy     z:3
-        ldx     z:5
+        ldy     z:arg 0 ; dest
+        ldx     z:arg 2 ; src
 
         bra     skip_first_inc
 
@@ -30,22 +30,22 @@ skip_first_inc:
         sta     a:0,y
         bnz     loop
 
-        lda     z:3
+        lda     z:arg 0 ; dest
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; size_t strlen(const char *str)
 .export strlen
 .proc strlen
-        enter_nostackvars
+        enter
 
         ; Load initial values
         rep     #$10
         sep     #$20
         ldy     #0      ; Count variable
-        ldx     z:3     ; Pointer within string
+        ldx     z:arg 0 ; Pointer within string
 
         bra     skip_first_inc
 
@@ -60,25 +60,25 @@ done:
         rep     #$30
         tya
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ;int strcmp (const char *str1, const char *str2)
 .export strcmp
 .proc strcmp
-        enter_nostackvars
+        enter
 
         rep     #$10
         sep     #$20
         ldy     #0
 
 loop:
-        lda     (3),y
-        sub     (5),y
+        lda     (arg 0),y
+        sub     (arg 2),y
         bnz     sign_extend
 
-        lda     (3),y
+        lda     (arg 0),y
         bze     sign_extend
 
         iny
@@ -96,31 +96,31 @@ set_upper_byte:
 clear_upper_byte:
         and     #$00FF
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void *memset(void *s, int c, size_t n)
 .export memset
 .proc memset
-        enter_nostackvars
+        enter
         rep     #$30
 
-        ldx     z:7 ; n
+        ldx     z:arg 4 ; n
         bze     done
 
-        lda     z:5 ; c
+        lda     z:arg 2 ; c
 
         ; Manually store once, will be used as source for copy
         sep     #$20
-        sta     (3) ; *s
+        sta     (arg 0) ; *s
         dex     ; n - 1
         bze     done
         rep     #$30
 
         txa     ; n - 1
         dec     ; n - 2
-        ldx     z:3 ; s
+        ldx     z:arg 0 ; s
         txy     ; s
         iny     ; s + 1
 
@@ -133,24 +133,24 @@ done:
 
 done:
         rep    #$30
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void *memcpy(void *dest, const void *src, size_t n)
 .export memcpy
 .proc memcpy
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Put n - 1 into A, or done if n == 0
-        lda     z:7 ; n
+        lda     z:arg 4 ; n
         bze     done
         dec
 
         ; Load dest and src to Y and X
-        ldy     z:3 ; dest
-        ldx     z:5 ; src
+        ldy     z:arg 0 ; dest
+        ldx     z:arg 2 ; src
 
         ; Run mvn with:
         ; A: n - 1
@@ -160,23 +160,23 @@ done:
         mvn     0, 0
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; void *memmove(void *dest, const void *src, size_t n)
 .export memmove
 .proc memmove
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Done if n == 0
-        lda     z:7 ; n
+        lda     z:arg 4 ; n
         bze     done
 
         ; Load compare dest to src
-        lda     z:3 ; dest
-        cpa     z:5 ; src
+        lda     z:arg 0 ; dest
+        cpa     z:arg 2 ; src
 
         ; If equal, we're done
         beq     done
@@ -189,19 +189,19 @@ done:
 
 copy_pos:
         ; Load src + n - 1 to X
-        lda     z:5 ; src
-        add     z:7 ; n
+        lda     z:arg 2 ; src
+        add     z:arg 4 ; n
         dec
         tax
 
         ; Load dest + n - 1 to Y
-        lda     z:3 ; dest
-        add     z:7 ; n
+        lda     z:arg 0 ; dest
+        add     z:arg 4 ; n
         dec
         tay
 
         ; Load n - 1 to A
-        lda     z:7 ; n
+        lda     z:arg 4 ; n
         dec
 
         ; Run mvn with:
@@ -214,13 +214,13 @@ copy_pos:
 
 copy_neg:
         ; Load source to X
-        ldx     z:5 ; src
+        ldx     z:arg 2 ; src
 
         ; Load destination to Y
-        ldy     z:3 ; dest
+        ldy     z:arg 0 ; dest
 
         ; Load n - 1 to A
-        ldx     z:7 ; n
+        ldx     z:arg 4 ; n
         dec
 
         ; Run mvn with:
@@ -232,6 +232,6 @@ copy_neg:
         bra     done
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc

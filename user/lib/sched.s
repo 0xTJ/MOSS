@@ -10,26 +10,26 @@
 ; int clone(int (*fn)(void *), void *child_stack, int flags, void *arg, ... /* pid_t *ptid, void *newtls, pid_t *ctid */)
 .export clone
 .proc clone
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:15    ; ctid
+        lda     z:arg 12    ; ctid
         pha
-        lda     z:13    ; newtls
+        lda     z:arg 10    ; newtls
         pha
-        lda     z:11    ; ptid
+        lda     z:arg 8     ; ptid
         pha
-        lda     z:9     ; arg
+        lda     z:arg 6     ; arg
         pha
-        lda     z:7     ; flags
+        lda     z:arg 4     ; flags
         pha
-        lda     z:5     ; child_stack
+        lda     z:arg 2     ; child_stack
         pha
-        lda     z:3     ; fn
+        lda     z:arg 0     ; fn
         pha
         
         cop     $06
 
-        leave_nostackvars
+        leave
         rts
 .endproc

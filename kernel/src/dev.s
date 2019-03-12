@@ -47,11 +47,11 @@ dev_root_dir:
 
 ; struct Device *dev_from_name(char *name)
 .proc dev_from_name
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Push name to compare
-        lda     z:3 ; name
+        lda     z:arg 0 ; name
         pha
 
         ; Load devices pointer to X
@@ -80,27 +80,27 @@ skip_first_loop:
 
 done:
         txa
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; unsigned int fs_dev_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_read
-        enter_nostackvars
+        enter
         rep     #$30
 
-        ldx     z:3 ; node
+        ldx     z:arg 0 ; node
 
         ; Load struct Device * to X
         lda     a:FSNode::impl,x
         bze     failed
         tax
 
-        ldy     z:5 ; offset
+        ldy     z:arg 2 ; offset
         phy
-        ldy     z:7 ; size
+        ldy     z:arg 4 ; size
         phy
-        ldy     z:9 ; buffer
+        ldy     z:arg 6 ; buffer
         phy
 
         lda     a:Device::type,x
@@ -125,27 +125,27 @@ chardevice:
 
 failed:
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; unsigned int fs_dev_write(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_write
-        enter_nostackvars
+        enter
         rep     #$30
 
-        ldx     z:3 ; node
+        ldx     z:arg 0 ; node
 
         ; Load struct Device * to X
         lda     a:FSNode::impl,x
         bze     failed
         tax
 
-        ldy     z:5 ; offset
+        ldy     z:arg 2 ; offset
         phy
-        ldy     z:7 ; size
+        ldy     z:arg 4 ; size
         phy
-        ldy     z:9 ; buffer
+        ldy     z:arg 6 ; buffer
         phy
 
         lda     a:Device::type,x
@@ -170,13 +170,13 @@ chardevice:
 
 failed:
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; int fs_dev_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_dev_readdir
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Load device list first item
@@ -186,7 +186,7 @@ failed:
         bze     failed
 
         ; Load index into A
-        lda     z:5
+        lda     z:arg 2
 
         ; Go through list until A is 0
         bze done_loop
@@ -204,7 +204,7 @@ done_loop:
         pha
 
         ; Push destination string
-        lda     z:7
+        lda     z:arg 4 ; result
         add     #DirEnt::name
         pha
 
@@ -216,14 +216,14 @@ done_loop:
         ; Write inode
         lda     1,s
         tax
-        lda     z:7
+        lda     z:arg 4 ; result
         inc
         sta     a:DirEnt::inode,x
 
         lda     #0
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:
@@ -233,11 +233,11 @@ failed:
 
 ; int fs_dev_finddir(struct FSNode *node, char *name, struct FSNode *result)
 .proc fs_dev_finddir
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Get device pointer from name
-        lda     z:5 ; name
+        lda     z:arg 2 ; name
         pha
         jsr     dev_from_name
         rep     #$30
@@ -253,7 +253,7 @@ failed:
         ; Use memmove to fill result
         pea     .sizeof(FSNode)
         pha
-        lda     z:7 ; result
+        lda     z:arg 4 ; result
         pha
         jsr     memmove
         rep     #$30
@@ -264,7 +264,7 @@ failed:
         lda     #0
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:
@@ -289,7 +289,7 @@ failed:
 
 ; void register_driver(struct CharDriver *driver, const char *name, int type)
 .proc register_driver
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Allocate driver struct and put address in X
@@ -301,15 +301,15 @@ failed:
         tax
 
         ; Store driver to struct
-        lda     z:3
+        lda     z:arg 0 ; driver
         sta     a:Device::driver,x
 
         ; Store name string to struct
-        lda     z:5
+        lda     z:arg 2 ; name
         sta     a:Device::name,x
 
         ; Store type to struct
-        lda     z:7
+        lda     z:arg 4 ; type
         sta     a:Device::type,x
 
         ; Reset next device
@@ -319,7 +319,7 @@ failed:
         ; TODO
 
         ; Load FSNode
-        lda     z:7
+        lda     z:arg 4 ; type
         cmp     #DEV_TYPE_CHAR
         beq     chardevice
         bra     failed_device_type
@@ -380,6 +380,6 @@ failed_device_type:
 failed_driver_alloc:
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc

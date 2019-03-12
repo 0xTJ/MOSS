@@ -21,19 +21,16 @@ stderr:
 
 ; int fgetc(FILE *stream)
 .proc fgetc
-        enter_nostackvars
+        enter   2
         rep     #$30
 
-        ; Create stack space for read value
-        pea     0
-        tsc
-        inc
-
-        pea     1   ; read 1 byte
-        pha         ; Space for read value
-        ldx     z:3 ; stream
+        pea     1       ; read 1 byte
+        tdc
+        add     #var 0  ; Space for read value
+        pha
+        ldx     z:arg 0 ; stream
         lda     a:FILE::fd,x
-        pha         ; File Descriptor
+        pha             ; File Descriptor
         jsr     read
         rep     #$30
         ply
@@ -45,10 +42,10 @@ stderr:
         beq     failed
 
         ; Load read value for return
-        pla
+        lda     z:var 0
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:
@@ -58,20 +55,20 @@ failed:
 
 ; char *fgets(char *str, int num, FILE * stream)
 .proc fgets
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Push original string pointer
-        lda     z:3 ; str
+        lda     z:arg 0 ; str
         pha
 
 loop:
-        lda     z:5 ; num
+        lda     z:arg 2 ; num
         cmp     #1
         ble     done_loop
 
         ; Get a character from file stream
-        lda     z:7 ; stream
+        lda     z:arg 4 ; stream
         pha
         jsr     fgetc
         rep     #$30
@@ -81,12 +78,12 @@ loop:
         beq     done_loop
 
         ; Store character to buffer
-        ldx     z:3 ; str
+        ldx     z:arg 0 ; str
         sep     #$20
         sta     a:0,x
 
-        inc     z:3 ; str
-        dec     z:5 ; num
+        inc     z:arg 0 ; str
+        dec     z:arg 2 ; num
 
         cmp     #$0A
         rep     #$20
@@ -103,50 +100,50 @@ done_loop:
         cmp     1,s
         bne     done
         lda     #$0000
-        
+
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; int fputc(int c, FILE *stream)
 .proc fputc
-        enter_nostackvars
+        enter
         rep     #$30
 
-        pea     1   ; write 1 byte
+        pea     1       ; write 1 byte
         tdc
-        add     #3
-        pha         ; &c
-        ldx     z:5 ; stream
+        add     #arg 0  ; &c
+        pha
+        ldx     z:arg 2 ; stream
         lda     a:FILE::fd,x
-        pha         ; File Descriptor
+        pha             ; File Descriptor
         jsr     write
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; int fputs(const char *s, FILE * stream)
 .proc fputs
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; s
+        lda     z:arg 0 ; s
         pha
         jsr     strlen
         rep     #$30
         ply
 
-        pha         ; strlen(s)
-        lda     z:3 ; s
+        pha             ; strlen(s)
+        lda     z:arg 0 ; s
         pha
-        ldx     z:5 ; stream
+        ldx     z:arg 2 ; stream
         lda     a:FILE::fd,x
-        pha         ; File Descriptor
+        pha             ; File Descriptor
         jsr     write
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
@@ -155,29 +152,29 @@ getc    := fgetc
 
 ; int getchar(void)
 .proc getchar
-        enter_nostackvars
+        enter
         rep     #$30
 
         pea     stdin
         jsr     fgetc
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; char *gets(char *str)
 .proc gets
-        enter_nostackvars
+        enter
         rep     #$30
 
         pea     stdin
-        lda     z:3 ; str
+        lda     z:arg 0 ; str
         pha
         jsr     fgets
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
@@ -186,25 +183,25 @@ putc    := fputc
 
 ; int putchar(int c)
 .proc putchar
-        enter_nostackvars
+        enter
         rep     #$30
 
         pea     stdout
-        lda     z:3 ; c
+        lda     z:arg 0 ; c
         pha
         jsr     fputc
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; int puts(const char *s)
 .proc puts
-        enter_nostackvars
+        enter
         rep     #$30
 
         pea     stdout
-        lda     z:3 ; s
+        lda     z:arg 0 ; s
         pha
         jsr     fputs
         rep     #$30
@@ -212,9 +209,9 @@ putc    := fputc
         ply
 
         pea     stdout
-        pea     a:10    ; NL
+        pea     $0A     ; LF
         jsr     putchar
 
-        leave_nostackvars
+        leave
         rts
 .endproc

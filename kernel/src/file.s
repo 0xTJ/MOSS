@@ -16,10 +16,10 @@
 
 ; ssize_t read(int fd, void *buf, size_t nbyte)
 .proc read
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; fd
+        lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
         cmp     #PROC_MAX_FILES
@@ -36,9 +36,9 @@
         bze     failed
 
         ; Run read on it
-        ldx     z:5 ; buf
+        ldx     z:arg 2 ; buf
         phx
-        ldx     z:7 ; nbyte
+        ldx     z:arg 4 ; nbyte
         phx
         pea     0
         pha
@@ -50,7 +50,7 @@
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 failed:
         lda     #$FFFF  ; -1
@@ -59,10 +59,10 @@ failed:
 
 ; ssize_t write(int fd, const void *buf, size_t nbyte)
 .proc write
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; fd
+        lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
         cmp     #PROC_MAX_FILES
@@ -79,9 +79,9 @@ failed:
         bze     failed
 
         ; Run read on it
-        ldx     z:5 ; buf
+        ldx     z:arg 2 ; buf
         phx
-        ldx     z:7 ; nbyte
+        ldx     z:arg 4 ; nbyte
         phx
         pea     0
         pha
@@ -93,7 +93,7 @@ failed:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 failed:
         lda     #$FFFF  ; -1
@@ -102,7 +102,7 @@ failed:
 
 ; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
-        enter_nostackvars
+        enter
         rep     #$30
 
         ; Allocate result FSNode
@@ -121,7 +121,7 @@ failed:
         pha
 
         ; Push path
-        lda     z:3 ; path
+        lda     z:arg 0 ; path
         pha
 
         jsr     traverse_abs_path
@@ -171,7 +171,7 @@ table_done:
         pla
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed_traverse_path:
@@ -187,10 +187,10 @@ failed_malloc:
 
 ; int close(int fd)
 .proc close
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; fd
+        lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
         cmp     #PROC_MAX_FILES
@@ -235,7 +235,7 @@ failed_malloc:
         stz     a:0,x
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:
@@ -245,10 +245,10 @@ failed:
 
 ; int readdir(unsigned int fd, unsigned int count, struct DirEnt *result)
 .proc readdir
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; fd
+        lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
         cmp     #PROC_MAX_FILES
@@ -265,9 +265,9 @@ failed:
         bze     failed
 
         ; Run read on it
-        ldx     z:7 ; result
+        ldx     z:arg 4 ; result
         phx
-        ldx     z:5 ; count
+        ldx     z:arg 2 ; count
         phx
         pha
         jsr     readdir_fs
@@ -277,7 +277,7 @@ failed:
         ply
 
 done:
-        leave_nostackvars
+        leave
         rts
 
 failed:

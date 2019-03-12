@@ -10,11 +10,11 @@
 ; void error_code(int code)
 .proc error_code
         sei
-        enter_nostackvars
+        enter
         
         rep     #$30
         
-        lda     z:3 ; code
+        lda     z:arg 0 ; code
         
         sep     #$20
         
@@ -23,6 +23,6 @@
 forever_loop:
         bra     forever_loop
         
-        leave_nostackvars
+        leave
         rts
 .endproc

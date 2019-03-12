@@ -62,41 +62,42 @@
 .charmap    $79, $79
 .charmap    $7A, $7A
 
+.define var(byte_offset) 1 + byte_offset
+.define stored_direct    1 + stack_space
+.define return_addr      1 + stack_space + 2
+.define arg(byte_offset) 1 + stack_space + 2 + 2 + byte_offset
+
 .macro enter stack_space_in
+.ifblank stack_space_in
+        stack_space = 0
+.else
         stack_space = stack_space_in
+.endif
         rep     #$30
         phd
         tsc
+.if stack_space > 0
+        sec
+        sbc     #stack_space
+.endif
+        tcs
         tcd
 .endmacro
 
 .macro leave
+.ifblank stack_space
+        .error  "`leave` without `enter` in scope"
+.endif
+
         rep     #$30
         tay
         tdc
+.if stack_space > 0
+        clc
+        adc     #stack_space
+.endif
         tcs
         pld
-        tya
-.endmacro
-
-.macro enter_nostackvars
-        rep     #$30
-        ; Store D on stack and set new stack frame
-        tsc
-        phd
-        tcd
-.endmacro
-
-.macro leave_nostackvars
-        rep     #$30
-
-        tay
-
-        tdc
-        sub     #2
-        tcs
-        pld
-
         tya
 .endmacro
 

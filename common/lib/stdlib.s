@@ -11,10 +11,10 @@
 
 ; int abs(int n)
 .proc abs
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; n
+        lda     arg 0 ; n
         bpl     is_positive ; Skip if already positive
 
         eor     #$FFFF
@@ -22,7 +22,7 @@
 
 is_positive:
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
@@ -31,11 +31,11 @@ div             := __divide_s16_s16
 
 ; long int labs(long int n)
 .proc labs
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:3 ; lobyte(n)
-        ldx     z:5 ; hibyte(n)
+        lda     arg 0 ; loword(n)
+        ldx     arg 2 ; hiword(n)
         bpl     done ; Skip if already positive
 
         ; Invert lobyte(n)
@@ -58,7 +58,7 @@ div             := __divide_s16_s16
         inx
 
 done:
-        leave_nostackvars
+        leave
         rts
 .endproc
 
@@ -71,25 +71,25 @@ base36chars:
 
 ; char *itoa (int value, char *str, int base)
 .proc itoa
-        enter_nostackvars
+        enter
         rep     #$30
         
         ; Check that base is acceptable
-        lda     z:7 ; base
+        lda     z:arg 4 ; base
         cmp     #2
         blt     failed
         cmp     #36
         bgt     failed
 
         ; Push str
-        lda     z:5 ; str
+        lda     z:arg 2 ; str
         pha
 
-        lda     z:7 ; base
+        lda     z:arg 4 ; base
         cmp     #10
         bne     skip_negate
         
-        lda     z:3 ; value
+        lda     z:arg 0 ; value
         bpl     skip_negate
 
         ; Negate value
@@ -97,16 +97,16 @@ base36chars:
         inc
         
         ; Store negated value into value in parameters
-        sta     z:3 ; value
+        sta     z:arg 0 ; value
         
         ; Put '-' at beginning of str
-        ldx     z:5 ; str
+        ldx     z:arg 2 ; str
         sep     #$20
         lda     #'-'
         sta     a:0,x
         rep     #$20
         inx
-        stx     z:5 ; str
+        stx     z:arg 2 ; str
 
 skip_negate:
 
@@ -117,7 +117,7 @@ skip_negate:
         rep     #$20
         
 check_zero_value:
-        lda     z:3 ; value
+        lda     z:arg 0 ; value
         bnz     loop_finding_chars
         sep     #$20
         lda     #'0'
@@ -127,9 +127,9 @@ check_zero_value:
         bra     done_finding_chars
 
 loop_finding_chars:
-        lda     z:7 ; base
+        lda     z:arg 4 ; base
         pha
-        lda     z:3 ; value
+        lda     z:arg 0 ; value
         bze     done_finding_chars
         pha
         jsr     __divide_u16_u16
@@ -138,7 +138,7 @@ loop_finding_chars:
         ply
         ; X: value / base
         ; A: least significant digit of value that was removed
-        stx     z:3 ; Replace value with value / base
+        stx     z:arg 0 ; Replace value with value / base
         tax
 
         sep     #$20
@@ -153,7 +153,7 @@ done_finding_chars:
         ply         ; Remove extra base that was pushed
 
         sep     #$20
-        ldx     z:5 ; str
+        ldx     z:arg 2 ; str
 
 write_loop:
         pla         ; Pull a char
@@ -167,7 +167,7 @@ write_loop:
         pla     ; Pull original str
 
 done:
-        leave_nostackvars
+        leave
         rts
         
 failed:
