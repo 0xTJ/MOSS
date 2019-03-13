@@ -11,7 +11,6 @@
 .export __divide_s8_s8
 .proc __divide_s8_s8
         enter
-        ; 8-bit A, X, Y
         sep     #$30
 
         lda     z:arg 1 ; divisor
