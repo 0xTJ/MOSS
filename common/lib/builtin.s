@@ -5,37 +5,16 @@
 
 .include "functions.inc"
 
-.macro enter_nostackvars
-        rep     #$30
-        ; Store D on stack and set new stack frame
-        tsc
-        phd
-        tcd
-.endmacro
-
-.macro leave_nostackvars
-        rep     #$30
-
-        tay
-
-        tdc
-        sub     #2
-        tcs
-        pld
-
-        tya
-.endmacro
-
 .code
 
 ; cdiv_t __divide_s8_s8(char dividend, char divisor)
 .export __divide_s8_s8
 .proc __divide_s8_s8
-        enter_nostackvars
+        enter
         ; 8-bit A, X, Y
         sep     #$30
 
-        lda     z:4 ; divisor
+        lda     z:arg 1 ; divisor
         bpl     divisor_positive
 divisor_negative:
         ; Push negative divisor flag
@@ -44,7 +23,7 @@ divisor_negative:
         ; Negate and replace divisor in frame
         eor     #$FF
         inc
-        sta     z:4
+        sta     z:arg 1 ; divisor
         ; Done making divisor absolute
         bra     done_divisor
 divisor_positive:
@@ -53,7 +32,7 @@ divisor_positive:
         phy
 done_divisor:
 
-        lda     z:3 ; dividend
+        lda     z:arg 0 ; dividend
         bpl     dividend_positive
 dividend_negative:
         ; Push negative dividend flag
@@ -62,7 +41,7 @@ dividend_negative:
         ; Negate and replace dividend in frame
         eor     #$FF
         inc
-        sta     z:3
+        sta     z:arg 0 ; dividend
         ; Done making dividend absolute
         bra     done_dividend
 dividend_positive:
@@ -71,9 +50,9 @@ dividend_positive:
         phy
 done_dividend:
 
-        lda     z:4 ; divisor
+        lda     z:arg 1 ; divisor
         pha
-        lda     z:3 ; dividend
+        lda     z:arg 0 ; dividend
         pha
         jsr     __divide_u8_u8
         ; Put remainder into X
@@ -87,7 +66,7 @@ done_dividend:
         ; Fix values for negative dividend
         ply         ; 1 if dividend was negative
         bze     done_fix_result_neg_dividend
-        
+
         ; Negate quotient
         eor     #$FF
         inc
@@ -95,59 +74,53 @@ done_dividend:
         cpx     #0  ; Compare remainder to 0
         beq     done_fix_result_neg_dividend
 
-        ; dec     ; Subtract 1 from quotient
-
         ; Make remainder to be divisor - remainder
         pha         ; quotient
         txa
         ; Negate remainder
         eor     #$FF
         inc
-        ; add     z:4 ; divisor
         tax         ; Put fixed remainder back into X
         pla         ; Restore quotient to A
 
 done_fix_result_neg_dividend:
 
         ; Fix values for negative divisor
-        ply         ; 1 if divisor was negative
+        ply     ; 1 if divisor was negative
         bze     skip_negate_for_divisor
         ; Negate quotient
         eor     #$FF
         inc
 skip_negate_for_divisor:
-        
+
         ; Combine X and A to create the return value
         xba
         txa
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; ucdiv_t __divide_u8_u8(unsigned char dividend, unsigned char divisor)
 .export __divide_u8_u8
 .proc __divide_u8_u8
-        ; Reserve stack frame space for quotient
-        sep     #$30
-        lda     #0
-        pha
+        enter 1
 
-        enter_nostackvars
-        ; Frame: unsigned char quotient, void *ret_addr, unsigned char dividend, unsigned char divisor
-        
+        ; 0: unsigned char quotient
+
         sep     #$30
 
-        lda     z:5 ; divisor
-        ldx     z:4 ; dividend
+        stz     z:var 0 ; quotient
+        ldx     z:arg 0 ; dividend
+        lda     z:arg 1 ; divisor
         ldy     #1
-        
+
 find_left_divisor_bit:
         asl         ; Shift divisor and put previous leftmost into carry
         bcs     found_left_divisor_bit  ; Branch when we find the leftmost bit
         iny         ; Increment shift count
-        cpy     #9 ; Check if we have a exceeded max shifts
-        bne    find_left_divisor_bit
+        cpy     #9  ; Check if we have a exceeded max shifts
+        bne     find_left_divisor_bit
 
 found_left_divisor_bit:
         ror         ; Shift last bit shifted out back in
@@ -159,32 +132,27 @@ division_loop:
         bcc     after_dividend_commit   ; Skip transferring dividend back to X if subtraction failed
         tax
 after_dividend_commit:
-        rol     z:1 ; Shifts in 1 to quotient if division was successful, otherwise 0
-        pla         ; Pull divisor
-        lsr         ; Shift divisor to the right
-        dey         ; Decrement shift count
+        rol     z:var 0 ; Shifts in 1 to quotient if division was successful, otherwise 0
+        pla             ; Pull divisor
+        lsr             ; Shift divisor to the right
+        dey             ; Decrement shift count
         bnz     division_loop   ; Loop if Y is not 0
 
-        leave_nostackvars
-
-        sep     #$30
-        
-        pla     ; Pull quotient into A
+        lda     z:var 0 ; Load quotient into A
         xba
         txa     ; Put remainder into A
-        
-        rep     #$30
 
+        leave
         rts
 .endproc
 
 ; div_t __divide_s16_s16(int dividend, int divisor)
 .export __divide_s16_s16
 .proc __divide_s16_s16
-        enter_nostackvars
+        enter
         rep     #$30
 
-        lda     z:5 ; divisor
+        lda     z:arg 2 ; divisor
         bpl     divisor_positive
 divisor_negative:
         ; Push negative divisor flag
@@ -193,7 +161,7 @@ divisor_negative:
         ; Negate and replace divisor in frame
         eor     #$FFFF
         inc
-        sta     z:5
+        sta     z:arg 2 ; divisor
         ; Done making divisor absolute
         bra     done_divisor
 divisor_positive:
@@ -202,7 +170,7 @@ divisor_positive:
         phy
 done_divisor:
 
-        lda     z:3 ; dividend
+        lda     z:arg 0 ; dividend
         bpl     dividend_positive
 dividend_negative:
         ; Push negative dividend flag
@@ -211,7 +179,7 @@ dividend_negative:
         ; Negate and replace dividend in frame
         eor     #$FFFF
         inc
-        sta     z:3
+        sta     z:arg 0 ; dividend
         ; Done making dividend absolute
         bra     done_dividend
 dividend_positive:
@@ -220,16 +188,16 @@ dividend_positive:
         phy
 done_dividend:
 
-        lda     z:5 ; divisor
+        lda     z:arg 2 ; divisor
         pha
-        lda     z:3 ; dividend
+        lda     z:arg 0 ; dividend
         pha
         jsr     __divide_u16_u16
         rep     #$30
         ; Pull arguments to unsigned division call
         ply
         ply
-        
+
         ; Swap A and X
         pha
         txa
@@ -239,7 +207,7 @@ done_dividend:
         ; Fix values for negative dividend
         ply         ; 1 if dividend was negative
         bze     done_fix_result_neg_dividend
-        
+
         ; Negate quotient
         eor     #$FFFF
         inc
@@ -247,15 +215,12 @@ done_dividend:
         cpx     #0  ; Compare remainder to 0
         beq     done_fix_result_neg_dividend
 
-        ; dec     ; Subtract 1 from quotient
-
         ; Make remainder to be divisor - remainder
         pha         ; quotient
         txa
         ; Negate remainder
         eor     #$FFFF
         inc
-        ; add     z:4 ; divisor
         tax         ; Put fixed remainder back into X
         pla         ; Restore quotient to A
 
@@ -268,30 +233,27 @@ done_fix_result_neg_dividend:
         eor     #$FFFF
         inc
 skip_negate_for_divisor:
-        
+
         ; Swap A and X
         pha
         txa
         plx
         ; Remainder is in A, quotient in X
 
-        leave_nostackvars
+        leave
         rts
 .endproc
 
 ; udiv_t __divide_u16_u16(unsigned int dividend, unsigned int divisor)
 .export __divide_u16_u16
 .proc __divide_u16_u16
-        ; Reserve stack frame space for quotient
-        rep     #$30
-        lda     #0
-        pha
+        enter   2
 
-        enter_nostackvars
-        ; Frame: unsigned int quotient, void *ret_addr, unsigned int dividend, unsigned int divisor
+        ; 0: unsigned int quotient
 
-        lda     z:7 ; divisor
-        ldx     z:5 ; dividend
+        stz     z:var 0 ; quotient
+        ldx     z:arg 0 ; dividend
+        lda     z:arg 2 ; divisor
         ldy     #1
 
 find_left_divisor_bit:
@@ -311,16 +273,17 @@ division_loop:
         bcc     after_dividend_commit   ; Skip transferring dividend back to X if subtraction failed
         tax
 after_dividend_commit:
-        rol     z:1 ; Shifts in 1 to quotient if division was successful, otherwise 0
+        rol     z:var 0 ; Shifts in 1 to quotient if division was successful, otherwise 0
         pla         ; Pull divisor
         lsr         ; Shift divisor to the right
         dey         ; Decrement shift count
         bnz     division_loop   ; Loop if Y is not 0
 
-        leave_nostackvars
+        ; Move remainder to A
+        txa
+        ; Load quotient into X
+        ldx     z:var 0 ; quotient
 
-        txa ; Move remainder to A
-        plx ; Pull quotient into X
-
+        leave
         rts
 .endproc
