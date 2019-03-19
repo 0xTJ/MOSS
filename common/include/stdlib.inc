@@ -25,3 +25,7 @@ NULL            := 0
 .global malloc
 ; void free(void * far ptr) far
 .global free
+; void exit(int status)
+.global exit
+; void _Exit(int status)
+.global _Exit

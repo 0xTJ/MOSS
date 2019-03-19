@@ -226,6 +226,8 @@ failed:
 
 .export proc2
 .proc proc2
+        enter
+
         pea     tmp_str
         jsr     rls
 
@@ -239,4 +241,6 @@ loop:
         ply
 
         bra     loop
+
+        leave
 .endproc

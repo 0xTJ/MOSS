@@ -7,7 +7,7 @@
 .include "lib.inc"
 .include "w65c265s.inc"
 
-.export STACK_SIZE = 1024
+.export STACK_SIZE = $1000
 
 .segment "STACK"
 

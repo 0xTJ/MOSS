@@ -4,3 +4,5 @@
 .global write
 ; int close(int fd)
 .global close
+; void _exit(int status)
+.global _exit

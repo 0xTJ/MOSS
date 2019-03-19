@@ -5,6 +5,7 @@ PROC_NUM = 8
 PROCESS_CREATED = 0
 PROCESS_READY = 1
 PROCESS_TERMINATED = 2
+PROCESS_WAIT_VFORK = 3
 
 .struct Process
         stack_p .word
@@ -13,7 +14,9 @@ PROCESS_TERMINATED = 2
         ppid    .word
 
         state   .word
-        
+
+        ret_val .word
+
         next    .addr
 
         skp_sav .word
@@ -45,3 +48,5 @@ PROCESS_TERMINATED = 2
 .global term_proc
 ; void destroy_proc(int pid)
 .global destroy_proc
+; void _exit(int status)
+.global _exit

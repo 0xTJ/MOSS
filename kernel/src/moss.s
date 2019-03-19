@@ -40,7 +40,7 @@ O65_SIZE = 3000
         sta     TIFR
 
         ; Load T2 values
-        T2Freq  = 10
+        T2Freq  = 100
         lda     #.lobyte((F_CLK / 16) / T2Freq)
         sta     T2CL
         lda     #.hibyte((F_CLK / 16) / T2Freq)

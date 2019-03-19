@@ -47,12 +47,24 @@
 ; int close(int fd)
 .proc close
         enter
-        rep     #$30
 
         lda     z:arg 0 ; fd
         pha
         
         cop     $0A
+
+        leave
+        rts
+.endproc
+
+; void _exit(int status)
+.proc _exit
+        enter
+
+        lda     z:arg 0 ; status
+        pha
+        
+        cop     $0B
 
         leave
         rts

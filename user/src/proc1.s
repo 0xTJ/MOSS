@@ -6,18 +6,39 @@
 .include "functions.inc"
 .include "fcntl.inc"
 .include "stdio.inc"
+.include "stdlib.inc"
 .include "sched.inc"
-
-.segment "STARTUP"
-
-        jmp     proc1
-
-.code
 
 .import proc2
 
-.export proc1
-.proc proc1
+.segment "STARTUP"
+
+.proc _start
+        enter
+
+        ; Setup stack frame
+        lda     z:2 ; argv
+        pha
+        lda     z:0 ; argc
+        pha
+        
+        ; Call main
+        jsr     main
+        rep     #$30
+        
+        ; Call exit
+        pha
+        jsr     exit
+        
+loop_forever:
+        bra     loop_forever
+.endproc
+
+.code
+
+.proc main
+        enter
+
         ; Setup stdin
         pea     O_RDONLY
         pea     dev_ttyS0_path
@@ -59,9 +80,9 @@
         ply
         ply
         ply
-        
-loop:
-        bra     loop
+
+        leave
+        rts
 .endproc
 
 .rodata

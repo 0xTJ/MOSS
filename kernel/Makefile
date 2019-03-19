@@ -13,7 +13,7 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(
 all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET)
-	bin2mot -O0x008000 -L0x002100 -2 -H $^
+	bin2mot -O0x008000 -L0x002000 -2 -H $^
 
 $(TARGET): $(OBJS) ../user/user.o65 mensch.cfg
 	$(CC) $(LDFLAGS) $(OBJS) -o $@

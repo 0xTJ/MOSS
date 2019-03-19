@@ -88,7 +88,6 @@
 .ifblank stack_space
         .error  "`leave` without `enter` in scope"
 .endif
-
         rep     #$30
         tay
         tdc

@@ -145,7 +145,6 @@ done:
 ; Set to not running.
 .proc clone_current_proc
         enter
-        rep     #$30
 
         ; Disable interrupts to safely modify current process
         php
@@ -227,7 +226,7 @@ failed:
 
         ; Get address to store initial stack + 1 in X
         lda     z:arg 2 ; initial_sp
-        sub     #.sizeof(ISRFrame) - 1
+        sub     #.sizeof(ISRFrame) - 5
         tax
 
         ; Reset values
@@ -328,6 +327,9 @@ found_empty_proc:   ; X contains new PID * 2
         lda     #PROCESS_CREATED
         sta     a:Process::state,x
 
+        ; Clear return value
+        stz     a:Process::ret_val,x
+
         ; Store X and Y
         phx
         phy
@@ -399,7 +401,7 @@ found_prev:
 
         inc     disable_scheduler
 
-        ; Load PID to destroy
+        ; Load PID to terminate
         lda     z:arg 0 ; pid
 
         ; Get address of process struct into X
@@ -442,63 +444,72 @@ skip:
 
 ; void destroy_proc(int pid)
 .proc destroy_proc
-        enter
-        rep     #$30
+        enter   2
+        
+        ; 0: stuct proc *proc_p
+        ; 2: stuct proc *next_p
+        ; 4: stuct proc *prev_p
 
         inc     disable_scheduler
 
-        ; Load PID to destroy
+        ; Load PID to destroy to A
         lda     z:arg 0 ; pid
 
-        ; Get address of process struct into X
+        ; Get address of process struct into X and proc_p
         asl
         tax
-        lda     proc_table,x
-        tax
+        lda     a:proc_table,x
+        sta     z:var 0 ; proc_p
 
-        ; Get the next of the process to be destroyed and push to stack
+        ; Get the next of the process to be destroyed and store to next_p
+        tax             ; proc_p
         lda     a:Process::next,x
-        pha
+        sta     z:var 2 ; next_p
 
-        ; Push address of process struct to be destroyed
-        phx
-
-        ; Find previous of the one to be destroyed and load to X
+        ; Find previous of the one to be destroyed and store to prev_p
+        phx             ; proc_p
         jsr     find_previous_proc
-        tax
-
-        ; Load the next of the process to be destroyed to A
         rep     #$30
-        lda     3,s
+        sta     z:var 4 ; prev_p
 
         ; Store the next of the process to be destroyed to the next of the previous
+        tax             ; prev_p
+        lda     z:var 2 ; next_p
         sta     a:Process::next,x
 
-        ; Load address of process struct to be destroyed to X
-        plx
-
-        ; Pop the next of the process to be destroyed from stack
-        ply
-
-        ; The process to be removed has now been removed from the execution chain
-
-        ; Store struct address for use by free
-        phx
+        ; The process to be removed has now been removed from the list
 
         ; Remove process from process table
         lda     z:arg 0 ; pid
         asl
         tax
-        lda     #0
-        sta     a:proc_table,x
+        stz     a:proc_table,x
 
         ; Free struct of process to be destroyed
+        lda     z:var 0 ; proc_p
+        pha
         jsr     free
         rep     #$30
-        pla
+        ply
 
         dec     disable_scheduler
 
         leave
         rts
+.endproc
+
+; void _exit(int status)
+.proc _exit
+        enter
+
+        ; Call terminate on process
+        lda     a:current_process_p
+        pha
+        jsr     term_proc
+        rep     #$30
+        ply
+
+; Loop, waiting for control to be taken away
+loop:
+        bra     loop
 .endproc

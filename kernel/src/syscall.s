@@ -37,6 +37,7 @@ syscall getpid, 0
 syscall getppid, 0
 syscall readdir, 6
 syscall close, 2
+syscall _exit, 2
 
 .import __SYSCALL_TABLE__
 .import __SYSCALL_COUNT__
@@ -137,7 +138,7 @@ no_syscall_args:
         lda     z:1 ; Load Syscall # into A
 
 syscall_call:
-        ; Multiply Syscall # - 1 by 2
+        ; Multiply Syscall # - 1 by 2 and put into X
         dec
         asl
         tax
@@ -223,4 +224,8 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_close
         jmp     close
+.endproc
+
+.proc sc__exit
+        jmp     _exit
 .endproc
