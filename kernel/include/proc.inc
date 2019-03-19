@@ -56,5 +56,3 @@ PROCESS_WAIT_VFORK = 3
 .global term_proc
 ; void destroy_proc(int pid)
 .global destroy_proc
-; void _exit(int status)
-.global _exit

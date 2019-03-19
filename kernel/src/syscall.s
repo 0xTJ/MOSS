@@ -13,6 +13,7 @@
 .include "dump_process_table.inc"
 .include "w65c265s.inc"
 .include "dirent.inc"
+.include "unistd.inc"
 
 .macro syscall sc_proc, arg_count
 .ifndef syscall_count
@@ -107,12 +108,15 @@ syscall _exit, 2
         ; |                     |
         ; +---------------------+
 
-        lda     1,s
+        ; Load number of arguments in syscall to A
+        lda     1,s ; Syscall #
         tax
         dex
         sep     #$20
         lda     a:sysargn,x
         rep     #$20
+        and     #$FF
+
         bze     no_syscall_args
         pha
 
