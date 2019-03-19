@@ -61,7 +61,6 @@ O65_SIZE = 3000
 ; int runO65(uint8_t *o65)
 .proc runO65
         enter   10
-        rep     #$30
 
         ; 0: void *text_base
         ; 2: void *data_base

@@ -62,12 +62,12 @@ syscall _exit, 2
         ; +---------------------+  |
         ; | Status Register     | /
         ; +---------------------+
-        
+
         ; Load address of COP signature to X
         lda     2,s
         tax
         dex
-        
+
         ; Load COP signature to A
         sep     #$20
         lda     a:0,x
@@ -127,7 +127,7 @@ syscall _exit, 2
 
         pla         ; Stack is again as shown above, and # of arguments is in A
         dec
-        
+
         mvp     0,0
 
         ; Y will contain the new SP, below the arguments
@@ -145,10 +145,10 @@ syscall_call:
 
         ; Re-enable interrupts
         cli
-        
+
         jsr     (__SYSCALL_TABLE__,x)
         ; Return value in A
-        
+
         rep     #$30
 
         ; Restore SP, D and remove Syscall # from stack
@@ -186,7 +186,7 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_getpid
         rep     #$30
-        
+
         ldx     current_process_p
         lda     Process::pid,x
 
@@ -195,7 +195,7 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_getppid
         rep     #$30
-        
+
         ldx     current_process_p
         lda     Process::ppid,x
 
