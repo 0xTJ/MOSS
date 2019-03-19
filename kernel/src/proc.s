@@ -7,11 +7,13 @@
 .include "proc.inc"
 .include "functions.inc"
 .include "stdlib.inc"
+.include "fcntl.inc"
 .include "string.inc"
 .include "w65c265s.inc"
 .include "isr.inc"
 .include "stdio.inc"
 .include "errcode.inc"
+.include "unistd.inc"
 
 .bss
 
