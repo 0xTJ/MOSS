@@ -15,6 +15,7 @@
 .include "errcode.inc"
 .include "unistd.inc"
 .include "o65.inc"
+
 EXECVE_SIZE = 3000
 
 .bss
@@ -245,9 +246,17 @@ failed:
         ; Lock scheduler mutex
         inc     disable_scheduler
 
-        ; Get address to store initial stack + 1 in X
+        ; Get address to store initial stack in A
         lda     z:arg 2 ; initial_sp
-        sub     #.sizeof(ISRFrame) - 5
+
+        ; Make space for main arguments
+        sub     #4
+
+        ; Make space for ISR frame
+        sub     #.sizeof(ISRFrame)
+
+        ; Increment stack pointer in A to get base of stack, and put into X
+        inc
         tax
 
         ; Reset values
@@ -266,7 +275,6 @@ failed:
         txa
         ldx     z:arg 0 ; proc
 
-        ; Store process's SP in struct
         ; Decrement SP because it was one above
         dec
 
