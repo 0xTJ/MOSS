@@ -19,9 +19,17 @@ PROCESS_WAIT_VFORK = 3
 
         next    .addr
 
-        skp_sav .word
+        text_base   .addr
+        data_base   .addr
+        bss_base    .addr
+        zero_base   .addr
+        stack_base  .addr
 
         files_p .addr 8
+
+        ; The following are used to replace the stack pointer and stack base when returning from syscall
+        new_stack_p .word
+        new_stack_base .word
 .endstruct
 
 .global sys_tick

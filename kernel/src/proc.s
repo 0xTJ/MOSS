@@ -2,6 +2,7 @@
 .smart
 
 .macpack generic
+.macpack longbranch
 
 .include "proc.inc"
 .include "functions.inc"
@@ -41,20 +42,25 @@ disable_scheduler:
         cmp     #$0000
         beq     failed
 
+        ; Store struct as first process and as current process
         sta     proc_table + 0
         sta     current_process_p
 
+        ; Transfer struct to X
         tax
+
+        ; Set process as own next in execution chain
         sta     a:Process::next,x
 
+        ; Set as PID 0 and own parent
         stz     a:Process::pid,x
         stz     a:Process::ppid,x
 
+        ; Set as running
         lda     #PROCESS_READY
         sta     a:Process::state,x
 
-        stz     a:Process::skp_sav,x
-
+        ; Clear file descriptors
         pea     .sizeof(Process::files_p)
         pea     0
         lda     current_process_p
@@ -65,6 +71,17 @@ disable_scheduler:
         ply
         ply
         ply
+
+        ; Clear segment bases, they aren't used and shouldn't be deleted
+        stz     a:Process::text_base,x
+        stz     a:Process::data_base,x
+        stz     a:Process::bss_base,x
+        stz     a:Process::zero_base,x
+        stz     a:Process::stack_base,x
+
+        ; Clear replacement stack values
+        stz     a:Process::new_stack_p,x
+        stz     a:Process::new_stack_base,x
 
         stz     disable_scheduler
 
@@ -246,11 +263,11 @@ failed:
         ldx     z:arg 0 ; proc
 
         ; Store process's SP in struct
+        ; Decrement SP because it was one above
         dec
-        sta     a:Process::stack_p,x
 
-        ; Reset not saving state
-        stz     a:Process::skp_sav,x
+        ; Store process's SP in struct
+        sta     a:Process::stack_p,x
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
@@ -329,6 +346,17 @@ found_empty_proc:   ; X contains new PID * 2
 
         ; Clear return value
         stz     a:Process::ret_val,x
+
+        ; Clear segment bases
+        stz     a:Process::text_base,x
+        stz     a:Process::data_base,x
+        stz     a:Process::bss_base,x
+        stz     a:Process::zero_base,x
+        stz     a:Process::stack_base,x
+
+        ; Clear replacement stack values
+        stz     a:Process::new_stack_p,x
+        stz     a:Process::new_stack_base,x
 
         ; Store X and Y
         phx
@@ -445,7 +473,7 @@ skip:
 ; void destroy_proc(int pid)
 .proc destroy_proc
         enter   2
-        
+
         ; 0: stuct proc *proc_p
         ; 2: stuct proc *next_p
         ; 4: stuct proc *prev_p
