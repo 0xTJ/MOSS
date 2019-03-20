@@ -7,6 +7,7 @@
 .include "fcntl.inc"
 .include "stdio.inc"
 .include "stdlib.inc"
+.include "unistd.inc"
 .include "sched.inc"
 
 .import proc2
@@ -21,15 +22,15 @@
         pha
         lda     z:0 ; argc
         pha
-        
+
         ; Call main
         jsr     main
         rep     #$30
-        
+
         ; Call exit
         pha
         jsr     exit
-        
+
 loop_forever:
         bra     loop_forever
 .endproc
@@ -69,10 +70,10 @@ loop_forever:
         rep     #$30
         ply
 
-        ; Start running process 1
+        ; Start running process 2
         pea     0
         pea     0
-        pea     $BFFF
+        pea     $EFFF
         pea     proc2
         jsr     clone
         rep     #$30
@@ -80,6 +81,9 @@ loop_forever:
         ply
         ply
         ply
+
+loop_forever:
+        bra     loop_forever
 
         leave
         rts

@@ -69,3 +69,29 @@
         leave
         rts
 .endproc
+
+; pid_t vfork(void)
+.proc vfork
+        ; No enter, we want to directly pass back changes to SP
+
+        cop     $0D
+
+        rts
+.endproc
+
+; int execve(const char *filename, char *const argv[], char *const envp[])
+.proc execve
+        enter
+
+        lda     z:arg 0 ; filename
+        pha
+        lda     z:arg 2 ; argv
+        pha
+        lda     z:arg 4 ; envp
+        pha
+        
+        cop     $0C
+
+        leave
+        rts
+.endproc

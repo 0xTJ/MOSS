@@ -10,6 +10,7 @@
 .include "unistd.inc"
 .include "sched.inc"
 .include "fcntl.inc"
+.include "string.inc"
 .include "dump_process_table.inc"
 .include "w65c265s.inc"
 .include "dirent.inc"
@@ -39,6 +40,8 @@ syscall getppid, 0
 syscall readdir, 6
 syscall close, 2
 syscall _exit, 2
+syscall execve, 6
+syscall vfork, 0
 
 .import __SYSCALL_TABLE__
 .import __SYSCALL_COUNT__
@@ -65,14 +68,12 @@ syscall _exit, 2
         ; +---------------------+
 
         ; Load address of COP signature to X
-        lda     2,s
+        lda     2,s ; Program Counter
         tax
         dex
 
         ; Load COP signature to A
-        sep     #$20
         lda     a:0,x
-        rep     #$20
         and     #$00FF
 
         ; Check syscall bounds
@@ -108,41 +109,42 @@ syscall _exit, 2
         ; |                     |
         ; +---------------------+
 
-        ; Load number of arguments in syscall to A
-        lda     1,s ; Syscall #
-        tax
+        ; Load Syscall # - 1 to X
+        ldx     z:1 ; Syscall #
         dex
-        sep     #$20
+
+        ; Load number of argument bytes in syscall to x
         lda     a:sysargn,x
-        rep     #$20
-        and     #$FF
+        and     #$FF    ; 16-bit load and mask out upper byte
+        tax
 
-        bze     no_syscall_args
-        pha
-
+        ; Subtract number of argument bytes from SP
+        phx
         tsc
-        inc
-        inc
-        tay         ; Address right below the Syscall # in stack
-
-        add     #8  ; Address of the K Register in stack
-        add     1,s ; Add the number of arguments
-        tax         ; Address of the deepest byte in the stack
-
-        pla         ; Stack is again as shown above, and # of arguments is in A
-        dec
-
-        mvp     0,0
-
-        ; Y will contain the new SP, below the arguments
-        tya
+        sub     1,s
         tcs
+        
+        ; Put address above current SP into Y
+        tay
+        iny
 
-no_syscall_args:
-        lda     z:1 ; Load Syscall # into A
+        ; Load address of arguments to A
+        tdc
+        add     #9
 
-syscall_call:
-        ; Multiply Syscall # - 1 by 2 and put into X
+        phx     ; Push number of argument bytes
+        pha     ; Push address of arguments
+        phy     ; Push address of space reserved for arguments
+        jsr     memcpy
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Stack now contains the frame needed to call functions with arguments
+
+        ; Load Syscall # - 1 multiplied by 2 into X
+        lda     z:1
         dec
         asl
         tax
@@ -150,17 +152,24 @@ syscall_call:
         ; Re-enable interrupts
         cli
 
+        ; Call appropriate handler
         jsr     (__SYSCALL_TABLE__,x)
-        ; Return value in A
-
         rep     #$30
 
-        ; Restore SP, D and remove Syscall # from stack
-        tax
+        ; Save A value to Y
+        tay
+        
+        ; Restore SP
         tdc
         tcs
-        pla
-        txa
+        
+        ; Restore A value from Y
+        tya
+        
+        ; Remove Syscall # from stack
+        ply
+        
+        ; Restore D
         pld
 
         rti
@@ -170,17 +179,11 @@ invalid_syscall:
         rti
 
 emul_mode:  ; Syscalls in emulation mode not supported
-        lda     #$FF
-        ldx     #$FF
         xce
         rti
 .endproc
 
 .proc sc_none
-        pea     3
-        jsr     term_proc
-        rep     #$30
-        ply
         rts
 .endproc
 
@@ -232,4 +235,12 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc__exit
         jmp     _exit
+.endproc
+
+.proc sc_execve
+        jmp     execve
+.endproc
+
+.proc sc_vfork
+        jmp     vfork
 .endproc

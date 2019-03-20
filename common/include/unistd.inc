@@ -6,3 +6,7 @@
 .global close
 ; void _exit(int status)
 .global _exit
+; pid_t vfork(void)
+.global vfork
+; int execve(const char *filename, char *const argv[], char *const envp[])
+.global execve

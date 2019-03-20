@@ -240,6 +240,22 @@ loop:
         rep     #$30
         ply
 
+        jsr     vfork
+
+        cop     2
+
+        tsc
+        pea     16
+        pea     tmp_str
+        pha
+        jsr     itoa
+        ply
+        ply
+        ply
+        pea     tmp_str
+        jsr     puts
+        ply
+
         bra     loop
 
         leave

@@ -8,6 +8,9 @@ PROCESS_TERMINATED = 2
 PROCESS_WAIT_VFORK = 3
 
 .struct Process
+        ; When an interrupt happens, this stores the stack where the state information was saved.
+        ; It can also be used for other things when the process is not CREATED or READY.
+        ; For example, it can hold the current stack when a parent of a vfork.
         stack_p .word
 
         pid     .word
@@ -19,17 +22,13 @@ PROCESS_WAIT_VFORK = 3
 
         next    .addr
 
+        files_p .addr 8
+
         text_base   .addr
         data_base   .addr
         bss_base    .addr
         zero_base   .addr
         stack_base  .addr
-
-        files_p .addr 8
-
-        ; The following are used to replace the stack pointer and stack base when returning from syscall
-        new_stack_p .word
-        new_stack_base .word
 .endstruct
 
 .global sys_tick
