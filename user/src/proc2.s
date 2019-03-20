@@ -241,10 +241,7 @@ loop:
         ply
 
         jsr     vfork
-
-        cop     2
-
-        tsc
+        
         pea     16
         pea     tmp_str
         pha
@@ -256,6 +253,8 @@ loop:
         jsr     puts
         ply
 
+        jsr     _exit
+        
         bra     loop
 
         leave

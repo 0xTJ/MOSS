@@ -91,54 +91,54 @@ prg_cnt_str:
         rep     #$30
         ply
 
-        ; ply
-        ; ply
-        ; pea     16
-        ; pea     tmp_string
+        ply
+        ply
+        pea     16
+        pea     tmp_string
         
-        ; pea     stack_p_str
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
-        ; ldx     z:arg 0 ; proc
-        ; lda     a:Process::stack_p,x
-        ; pha
-        ; jsr     itoa
-        ; rep     #$30
-        ; ply
-        ; pha
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
+        pea     stack_p_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::stack_p,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
         
-        ; pea     this_struct_p_str
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
-        ; lda     z:arg 0 ; proc
-        ; pha
-        ; jsr     itoa
-        ; rep     #$30
-        ; ply
-        ; pha
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
+        pea     this_struct_p_str
+        jsr     puts
+        rep     #$30
+        ply
+        lda     z:arg 0 ; proc
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
         
-        ; pea     next_struct_p_str
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
-        ; ldx     z:arg 0 ; proc
-        ; lda     a:Process::next,x
-        ; pha
-        ; jsr     itoa
-        ; rep     #$30
-        ; ply
-        ; pha
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
+        pea     next_struct_p_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::next,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
         
         ; pea     prg_cnt_str
         ; jsr     puts
