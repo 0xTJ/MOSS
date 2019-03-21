@@ -83,11 +83,11 @@
 .proc execve
         enter
 
-        lda     z:arg 0 ; filename
+        lda     z:arg 4 ; envp
         pha
         lda     z:arg 2 ; argv
         pha
-        lda     z:arg 4 ; envp
+        lda     z:arg 0 ; filename
         pha
         
         cop     $0C

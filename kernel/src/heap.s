@@ -105,10 +105,13 @@ not_found:   ; Y will contain NULL if it was not found
         enter
 
         lda     z:arg 0 ; ptr
+        bze     done
+        
         sub     #.sizeof(HeapTag)
         tax
         stz     a:HeapTag::flags,x
-
+        
+done:
         leave
         rts
 .endproc

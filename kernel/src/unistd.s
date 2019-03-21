@@ -2,11 +2,23 @@
 .smart
 
 .macpack generic
+.macpack longbranch
 
 .include "unistd.inc"
 .include "functions.inc"
 .include "string.inc"
+.include "o65.inc"
+.include "stdlib.inc"
+.include "fcntl.inc"
+.include "stdio.inc"
 .include "proc.inc"
+
+.data
+
+tmp_str:
+        .res    10
+
+.code
 
 ; void _exit(int status)
 ; TODO: Put status somewhere
@@ -68,15 +80,13 @@ is_vfork:
         tcs
         inc
         inc
-        inc
-        inc
         tcd
-        
+
         stx     current_process_p
-        
+
         ; Push the child PID
         phy
-        
+
         ; Call term_proc on child PID
         phy
         jsr     term_proc
@@ -85,10 +95,10 @@ is_vfork:
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
-        
+
         ; Pull child PID to A
         pla
-        
+
         rts
 .endproc
 
@@ -119,6 +129,13 @@ is_vfork:
         ldx     current_process_p
         lda     #PROCESS_READY
         sta     a:Process::state,x
+
+        ; Zero segment bases memory ownership
+        stz     a:Process::text_base,x
+        stz     a:Process::data_base,x
+        stz     a:Process::bss_base,x
+        stz     a:Process::zero_base,x
+        stz     a:Process::stack_base,x
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
@@ -161,11 +178,256 @@ is_vfork:
         rts
 .endproc
 
+EXEC_SIZE = 3000
+
+; void *load_o65(uint8_t *o65)
+.proc load_o65
+        enter   10
+
+        ; 0: void *text_base
+        ; 2: void *data_base
+        ; 4: void *bss_base
+        ; 6: void *zero_base
+        ; 8: void *stack_init
+        ; 10: void *stack_base
+
+        stz     z:var 0     ; text_base
+        stz     z:var 2     ; data_base
+        stz     z:var 4     ; bss_base
+        stz     z:var 6     ; zero_base
+        stz     z:var 8     ; stack_init
+        stz     z:var 10    ; stack_base
+
+        ; Allocate text space and store pointer to stack
+        ldx     z:arg 0 ; o65
+        lda     a:O65Header::tlen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     z:var 0 ; text_base
+
+        ; Allocate data space and store pointer to stack
+        ldx     z:arg 0 ; o65
+        lda     a:O65Header::dlen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     z:var 2 ; data_base
+
+        ; Allocate bss space and store pointer to stack
+        ldx     z:arg 0 ; o65
+        lda     a:O65Header::blen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     z:var 4 ; bss_base
+
+        ; Allocate zero space and store pointer to stack
+        ldx     z:arg 0 ; o65
+        lda     a:O65Header::zlen,x
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     z:var 6 ; zero_base
+
+        ; Allocate stack space and store pointer to stack
+        ldx     z:arg 0 ; o65
+        lda     a:O65Header::stack,x
+        bnz     not_zero_stack
+        lda     #$200
+not_zero_stack:
+        add     #$80
+        pha
+        pha
+        jsr     malloc
+        rep     #$30
+        ply
+        cmp     #0
+        jeq     failed
+        sta     z:var 10    ; stack_base
+        add     1,s
+        dec
+        ply
+        sta     z:var 8 ; stack_init
+
+        ; Call o65 loader
+        lda     z:var 6 ; zero_base
+        pha
+        lda     z:var 4 ; bss_base
+        pha
+        lda     z:var 2 ; data_base
+        pha
+        lda     z:var 0 ; text_base
+        pha
+        lda     z:arg 0 ; o65
+        pha
+        jsr     o65_load
+        rep     #$30
+        ply
+        ply
+        ply
+        ply
+        ply
+
+        ldx     current_process_p
+        lda     a:Process::text_base,x
+        pha
+        lda     z:var 0 ; text_base
+        sta     a:Process::text_base,x
+        jsr     free
+        rep     #$30
+        ply
+
+        ldx     current_process_p
+        lda     a:Process::data_base,x
+        pha
+        lda     z:var 2 ; data_base
+        sta     a:Process::data_base,x
+        jsr     free
+        rep     #$30
+        ply
+
+        ldx     current_process_p
+        lda     a:Process::bss_base,x
+        pha
+        lda     z:var 4 ; bss_base
+        sta     a:Process::bss_base,x
+        jsr     free
+        rep     #$30
+        ply
+
+        ldx     current_process_p
+        lda     a:Process::zero_base,x
+        pha
+        lda     z:var 6 ; zero_base
+        sta     a:Process::zero_base,x
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     z:var 10    ; stack_base
+
+done:
+        leave
+        rts
+
+failed:
+        lda     z:var 0 ; text_base
+        pha
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     z:var 2 ; data_base
+        pha
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     z:var 4 ; bss_base
+        pha
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     z:var 6 ; zero_base
+        pha
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     z:var 10 ; stack_base
+        pha
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     #0
+        bra     done
+.endproc
+
 ; int execve(const char *filename, char *const argv[], char *const envp[])
+; Only to be called directly by syscall
 .proc execve
         enter
 
+        ; Open executable file
+        pea     O_RDONLY
+        lda     z:arg 0 ; filename
+        pha
+        jsr     open
+        rep     #$30
+        ply
+        ply
 
+        ; Push fd for later
+        pha
+
+        ; Allocate temporary load buffer
+        pea     EXEC_SIZE
+        jsr     malloc
+        rep     #$30
+        ply
+
+        ; Pull fd to X, push buffer twice, and push fd
+        plx
+        pha
+        pha
+        phx
+
+        ; Read program to buffer
+        pea     EXEC_SIZE
+        pha
+        phx
+        jsr     read
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Close fd
+        jsr     close
+        rep     #$30
+        ply
+
+        cmp     #0
+        jeq     loop
+
+        ; TODO: Check all above functions for errors
+
+        ; TODO: Check for valid o65
+
+        ; TODO: Make space for arguments and pass them in
+
+        ; Load o65 and segments, returns new stack pointer
+
+        ; jsr     puts
+        jsr     load_o65
+        rep     #$30
+        ply
+
+        ; Pull buffer, push new stack pointer,
+
+        ; Free load buffer
+        jsr     free
+        rep     #$30
+        ply
+
+        cop     2
+loop:
+        bra     loop
 
         leave
         rts

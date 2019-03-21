@@ -65,6 +65,13 @@ disable_scheduler:
         lda     #PROCESS_READY
         sta     a:Process::state,x
 
+        ; Clear segment bases, they aren't used and shouldn't be deleted
+        stz     a:Process::text_base,x
+        stz     a:Process::data_base,x
+        stz     a:Process::bss_base,x
+        stz     a:Process::zero_base,x
+        stz     a:Process::stack_base,x
+
         ; Clear file descriptors
         pea     .sizeof(Process::files_p)
         pea     0
@@ -76,13 +83,6 @@ disable_scheduler:
         ply
         ply
         ply
-
-        ; Clear segment bases, they aren't used and shouldn't be deleted
-        stz     a:Process::text_base,x
-        stz     a:Process::data_base,x
-        stz     a:Process::bss_base,x
-        stz     a:Process::zero_base,x
-        stz     a:Process::stack_base,x
 
         stz     disable_scheduler
 
@@ -360,7 +360,6 @@ found_empty_proc:   ; X contains new PID * 2
         stz     a:Process::data_base,x
         stz     a:Process::bss_base,x
         stz     a:Process::zero_base,x
-        stz     a:Process::stack_base,x
         stz     a:Process::stack_base,x
 
         ; Store X and Y

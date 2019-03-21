@@ -96,3 +96,5 @@ dev_ttyS0_path:
 init_welcome_string:
         .byte $0D
         .asciiz "Welcome to the init process of MOSS!"
+dev_prgload_path:
+        .asciiz "/dev/prgload"

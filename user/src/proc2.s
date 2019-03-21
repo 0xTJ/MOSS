@@ -27,6 +27,8 @@ level_string:
         .asciiz "+-- "
 four_spaces_string:
         .asciiz "    "
+dev_prgload_path:
+        .asciiz "/dev/prgload"
 
 .code
 
@@ -230,6 +232,9 @@ failed:
 
         pea     tmp_str
         jsr     rls
+        
+        pea     dev_prgload_path
+        jsr     execve
 
 loop:
         jsr     getchar

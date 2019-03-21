@@ -35,6 +35,14 @@ stack_p_str:
         .asciiz "Stack Pointer:"
 prg_cnt_str:
         .asciiz "Program Counter:"
+text_base_str:
+        .asciiz "Text Base:"
+data_base_str:
+        .asciiz "Data Base:"
+bss_base_str:
+        .asciiz "BSS Base:"
+zero_base_str:
+        .asciiz "Zero Base:"
 
 .code
 
@@ -140,23 +148,65 @@ prg_cnt_str:
         rep     #$30
         ply
         
-        ; pea     prg_cnt_str
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
-        ; ldx     z:arg 0 ; proc
-        ; lda     a:Process::stack_p,x
-        ; tax
-        ; dex     ; Get base of ISR frame
-        ; lda     a:ISRFrame::prg_bnk,x
-        ; pha
-        ; jsr     itoa
-        ; rep     #$30
-        ; ply
-        ; pha
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
+        pea     text_base_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::text_base,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
+        pea     data_base_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::data_base,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
+        pea     bss_base_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::bss_base,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
+        pea     zero_base_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::zero_base,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
 
         ply
         ply

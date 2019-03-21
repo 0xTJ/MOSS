@@ -119,8 +119,8 @@ syscall vfork, 0
         tax
 
         ; Subtract number of argument bytes from SP
-        phx
         tsc
+        phx
         sub     1,s
         tcs
         
