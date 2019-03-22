@@ -232,9 +232,6 @@ failed:
 
         pea     tmp_str
         jsr     rls
-        
-        pea     dev_prgload_path
-        jsr     execve
 
 loop:
         jsr     getchar
@@ -245,20 +242,7 @@ loop:
         rep     #$30
         ply
 
-        jsr     vfork
-        
-        pea     16
-        pea     tmp_str
-        pha
-        jsr     itoa
-        ply
-        ply
-        ply
-        pea     tmp_str
-        jsr     puts
-        ply
-
-        jsr     _exit
+        cop 2
         
         bra     loop
 

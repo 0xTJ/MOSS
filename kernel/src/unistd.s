@@ -82,6 +82,7 @@ is_vfork:
         inc
         tcd
 
+        ; Store parent as active process
         stx     current_process_p
 
         ; Push the child PID
@@ -98,6 +99,13 @@ is_vfork:
 
         ; Pull child PID to A
         pla
+
+        rts
+.endproc
+
+.proc end_vfork
+        
+
 
         rts
 .endproc
@@ -140,7 +148,7 @@ is_vfork:
         ; Unlock scheduler mutex
         dec     disable_scheduler
 
-        ; Replicate last 16 bytes of stack and reposition D in these
+        ; Replicate last 20 bytes of stack and reposition D in these
         ; When syscall returns, D will be the correct value but the stack will be offset down to ensure no clobbering
 
         ; Transfer original SP to A
@@ -150,8 +158,8 @@ is_vfork:
         tax
         inx
 
-        ; Subtract 16 from SP
-        sub     #16
+        ; Subtract 20 from SP
+        sub     #20
         tcs
 
         ; Transfer new SP + 1 to Y
@@ -159,7 +167,7 @@ is_vfork:
         iny
 
         ; Call memcpy to create duplicate of current stack
-        pea     16  ; Push number of bytes to copy
+        pea     20  ; Push number of bytes to copy
         phx         ; Push original SP + 1
         phy         ; Push new SP + 1
         jsr     memcpy
@@ -169,7 +177,7 @@ is_vfork:
         ply
 
         tdc
-        sub     #16
+        sub     #20
         tcd
 
         ; Child returns with 0
@@ -181,8 +189,9 @@ is_vfork:
 EXEC_SIZE = 3000
 
 ; void *load_o65(uint8_t *o65)
+; stack_init returned in A, stack_base returned in X
 .proc load_o65
-        enter   10
+        enter   12
 
         ; 0: void *text_base
         ; 2: void *data_base
@@ -281,6 +290,9 @@ not_zero_stack:
         ply
         ply
 
+        ; Lock scheduler mutex
+        inc     disable_scheduler
+
         ldx     current_process_p
         lda     a:Process::text_base,x
         pha
@@ -317,7 +329,11 @@ not_zero_stack:
         rep     #$30
         ply
 
-        lda     z:var 10    ; stack_base
+        ; Unlock scheduler mutex
+        dec     disable_scheduler
+
+        lda     z:var 8     ; stack_init
+        ldx     z:var 10    ; stack_base
 
 done:
         leave
@@ -355,6 +371,7 @@ failed:
         ply
 
         lda     #0
+        ldx     #0
         bra     done
 .endproc
 
@@ -402,9 +419,6 @@ failed:
         rep     #$30
         ply
 
-        cmp     #0
-        jeq     loop
-
         ; TODO: Check all above functions for errors
 
         ; TODO: Check for valid o65
@@ -412,23 +426,106 @@ failed:
         ; TODO: Make space for arguments and pass them in
 
         ; Load o65 and segments, returns new stack pointer
-
-        ; jsr     puts
         jsr     load_o65
         rep     #$30
         ply
 
-        ; Pull buffer, push new stack pointer,
+        ; Pull buffer to Y, push new stack pointer and stack base
+        ply
+        phx     ; stack_base
+        pha     ; stack_init
 
         ; Free load buffer
+        phy     ; Buffer
         jsr     free
         rep     #$30
         ply
 
         cop     2
-loop:
-        bra     loop
+        rep     #$30
 
+        ; Lock scheduler mutex
+        inc     disable_scheduler
+
+        ; Pull new SP to A
+        pla
+
+        ; Pull new stack_base to X
+        plx
+
+        ; Exit context to allow access to return address
+        leave
+
+        ; Pull return address to Y
+        ply
+
+        ; Switch to new SP
+        tcs
+
+        ; Copy new stack_base from X to D
+        txa
+        tcd
+
+        ; Load current process struct to X
+        ldx     current_process_p
+
+        ; Push fake main arguments
+        pea     0
+        pea     0
+
+        sep     #$20
+        lda     #0
+        pha     ; Program Bank
+        rep     #$20
+        lda     a:Process::text_base,x
+        pha     ; Program Counter
+        sep     #$20
+        lda     #0
+        pha     ; Status Register
+        rep     #$20
+        lda     a:Process::zero_base,x
+        pha     ; Direct Page
+        lda     #0
+        pha     ; Fake Syscall #
+
+        ; Load old stack_base to X, and replace in struct with new one held in D
+        lda     a:Process::stack_base,x
+        pha
+        tdc
+        sta     a:Process::stack_base,x
+        plx
+
+        ; Set D to current SP
+        tsc
+        tcd
+
+        ; Push this call's return address
+        phy
+
+        enter
+
+        
+        cop 2
+        ; If parent is waiting for vfork to complete, complete it
+        ldx     current_process_p
+        lda     a:Process::ppid,x
+        asl
+        tax
+        lda     a:proc_table,x  ; Load parent process struct
+        tax
+        lda     a:Process::state,x
+        cmp     #PROCESS_WAIT_VFORK
+        bne     done_vfork_status
+        lda     #PROCESS_READY
+        sta     a:Process::state,x
+done_vfork_status:
+
+        ; Unlock scheduler mutex
+        dec     disable_scheduler
+        
+        cop     2
+
+failed:
         leave
         rts
 .endproc

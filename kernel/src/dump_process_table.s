@@ -43,6 +43,8 @@ bss_base_str:
         .asciiz "BSS Base:"
 zero_base_str:
         .asciiz "Zero Base:"
+stack_base_str:
+        .asciiz "Stack Base:"
 
 .code
 
@@ -199,6 +201,21 @@ zero_base_str:
         ply
         ldx     z:arg 0 ; proc
         lda     a:Process::zero_base,x
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
+        pea     stack_base_str
+        jsr     puts
+        rep     #$30
+        ply
+        ldx     z:arg 0 ; proc
+        lda     a:Process::stack_base,x
         pha
         jsr     itoa
         rep     #$30

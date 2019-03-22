@@ -24,7 +24,7 @@ ttyS0_name:
 ; Useful buffer is actually one less than this.
 ; Buffer of length 1 will always fail.
 rx_buff_length = $100
-tx_buff_length = $100
+tx_buff_length = $2
 
 rx_buff:
         .res    rx_buff_length

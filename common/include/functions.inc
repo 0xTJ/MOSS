@@ -69,9 +69,9 @@
 
 .macro enter stack_space_in
 .ifblank stack_space_in
-        stack_space = 0
+        stack_space .set 0
 .else
-        stack_space = stack_space_in
+        stack_space .set stack_space_in
 .endif
         rep     #$30
         phd

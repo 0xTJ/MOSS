@@ -24,6 +24,10 @@
 
 O65_SIZE = 3000
 
+.bss
+tmp_str:
+        .res 10
+
 .code
 
 .proc setup_systick_timer
@@ -189,65 +193,34 @@ failed:
         ; Setup system tick timer
         jsr     setup_systick_timer
 
-        ; Open prgload device
+        ; Setup stdin
         pea     O_RDONLY
-        pea     dev_prgload_path
+        pea     dev_ttyS0_path
         cop     3
         rep     #$30
         ply
         ply
 
-        ; Loop forever on failure
-        cmp     #0
-        blt     loop
-
-        ; Push prgload fd for later
-        pha
-
-        ; Allocate temporary load buffer
-        pea     O65_SIZE
-        jsr     malloc
-        rep     #$30
-        ply
-
-        ; Loop forever on failure
-        cmp     #0
-        beq     loop
-
-        ; Load prgload fd to X and push allocated buffer twice to run and free
-        plx
-        pha
-        pha
-        phx
-
-        ; Read program to buffer
-        pea     O65_SIZE
-        pha
-        phx
-        jsr     read
+        ; Setup stdout
+        pea     O_WRONLY
+        pea     dev_ttyS0_path
+        cop     3
         rep     #$30
         ply
         ply
-        ply
 
-        ; Loop forever on failure
-        cmp     #.sizeof(O65Header)
-        blt     loop
-
-        ; Close prgload fd
-        jsr     close
+        ; Setup stderr
+        pea     O_WRONLY
+        pea     dev_ttyS0_path
+        cop     3
         rep     #$30
         ply
-
-        ; Run program
-        jsr     runO65
-        rep     #$30
         ply
 
-        ; Free load buffer
-        jsr     free
-        rep     #$30
-        ply
+        cop     $0D
+
+        pea     dev_prgload_path
+        cop     $0C
 
 loop:
         bra     loop
@@ -255,5 +228,7 @@ loop:
 
 .rodata
 
+dev_ttyS0_path:
+        .asciiz "/dev/ttyS0"
 dev_prgload_path:
         .asciiz "/dev/prgload"
