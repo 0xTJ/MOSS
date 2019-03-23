@@ -222,7 +222,9 @@ emul_mode:  ; Syscalls in emulation mode not supported
 .endproc
 
 .proc sc_clone
-        jmp     clone
+        ; jmp     clone
+        lda     #$FFFF
+        rts
 .endproc
 
 .proc sc_readdir

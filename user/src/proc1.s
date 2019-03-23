@@ -69,6 +69,11 @@ loop_forever:
         jsr     puts
         rep     #$30
         ply
+        
+        jsr     vfork
+        
+        cop     2
+        jsr     _exit
 
         ; Start running process 2
         ; pea     0
@@ -81,18 +86,6 @@ loop_forever:
         ; ply
         ; ply
         ; ply
-loop:
-        jsr     getchar
-        rep     #$30
-
-        pha
-        jsr     putchar
-        rep     #$30
-        ply
-
-        cop 2
-        
-        bra     loop
 
 loop_forever:
         bra     loop_forever
@@ -100,7 +93,12 @@ loop_forever:
         leave
         rts
 .endproc
+ 
+.bss
 
+tmp_str:
+        .res    32
+ 
 .rodata
 
 dev_ttyS0_path:

@@ -22,11 +22,10 @@
 
 .import F_CLK: far
 
-O65_SIZE = 3000
+.rodata
 
-.bss
-tmp_str:
-        .res 10
+dev_prgload_path:
+        .asciiz "/dev/prgload"
 
 .code
 
@@ -62,120 +61,6 @@ tmp_str:
         rts
 .endproc
 
-; int runO65(uint8_t *o65)
-.proc runO65
-        enter   10
-
-        ; 0: void *text_base
-        ; 2: void *data_base
-        ; 4: void *bss_base
-        ; 6: void *zero_base
-        ; 8: void *stack_init
-
-        ; Allocate text space and store pointer to stack
-        ldx     z:arg 0 ; o65
-        lda     a:O65Header::tlen,x
-        pha
-        jsr     malloc
-        rep     #$30
-        ply
-        cmp     #0
-        jeq     failed
-        sta     z:var 0 ; text_base
-
-        ; Allocate data space and store pointer to stack
-        ldx     z:arg 0 ; o65
-        lda     a:O65Header::dlen,x
-        pha
-        jsr     malloc
-        rep     #$30
-        ply
-        cmp     #0
-        jeq     failed
-        sta     z:var 2 ; data_base
-
-        ; Allocate bss space and store pointer to stack
-        ldx     z:arg 0 ; o65
-        lda     a:O65Header::blen,x
-        pha
-        jsr     malloc
-        rep     #$30
-        ply
-        cmp     #0
-        jeq     failed
-        sta     z:var 4 ; bss_base
-
-        ; Allocate zero space and store pointer to stack
-        ldx     z:arg 0 ; o65
-        lda     a:O65Header::zlen,x
-        pha
-        jsr     malloc
-        rep     #$30
-        ply
-        cmp     #0
-        jeq     failed
-        sta     z:var 6 ; zero_base
-
-        ; Allocate stack space and store pointer to stack
-        ldx     z:arg 0 ; o65
-        lda     a:O65Header::stack,x
-        bnz     not_zero_stack
-        lda     #$200
-not_zero_stack:
-        add     #$80
-        pha
-        pha
-        jsr     malloc
-        rep     #$30
-        ply
-        cmp     #0
-        jeq     failed
-        add     1,s
-        ply
-        sta     z:var 8 ; stack_init
-
-        ; Call o65 loader
-        lda     z:var 6 ; zero_base
-        pha
-        lda     z:var 4 ; bss_base
-        pha
-        lda     z:var 2 ; data_base
-        pha
-        lda     z:var 0 ; text_base
-        pha
-        lda     z:arg 0 ; o65
-        pha
-        jsr     o65_load
-        rep     #$30
-        ply
-        ply
-        ply
-        ply
-        ply
-
-        ; Create new process with clone
-        pea     0
-        pea     0
-        lda     z:var 8 ; stack_base
-        pha
-        lda     z:var 0 ; text_base
-        pha
-        jsr     clone
-        rep     #$30
-        ply
-        ply
-        ply
-        ply
-
-done:
-        leave
-        rts
-
-failed:
-        lda     #0
-        bra     done
-.endproc
-
 .export main
 .proc main
         rep     #$30
@@ -203,10 +88,3 @@ failed:
 loop:
         bra     loop
 .endproc
-
-.rodata
-
-dev_ttyS0_path:
-        .asciiz "/dev/ttyS0"
-dev_prgload_path:
-        .asciiz "/dev/prgload"

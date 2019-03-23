@@ -21,7 +21,6 @@ tmp_str:
 .code
 
 ; void _exit(int status)
-; TODO: Put status somewhere
 .proc _exit
         enter
 
@@ -30,18 +29,9 @@ tmp_str:
         lda     z:arg 0 ; status
         sta     a:Process::ret_val,x
 
-        ; Load parent struct pointer to X
-        lda     a:Process::ppid,x
-        asl
-        tax
-        lda     a:proc_table,x
-        tax
-
-        ; Skip to vfork section if the parent is waiting for vfork to finish
-        lda     a:Process::state,x
-        cmp     #PROCESS_WAIT_VFORK
-        beq     is_vfork
-
+        ; Lock scheduler mutex
+        inc     disable_scheduler
+        
         ; Call terminate on process
         lda     current_process_p
         tax
@@ -51,56 +41,29 @@ tmp_str:
         rep     #$30
         ply
 
-; Loop, waiting for control to be taken away
-loop:
-        bra     loop
-
-is_vfork:
-
-        ; Load child PID to Y
-        ldx     current_process_p
-        ldy     a:Process::pid,x
-
-        ; Load parent process struct to X
+        ; Load parent struct pointer to X
         lda     a:Process::ppid,x
         asl
         tax
         lda     a:proc_table,x
         tax
 
-        ; Lock scheduler mutex
-        inc     disable_scheduler
-
+        ; Skip the vfork section if the parent is not waiting for vfork to finish
+        lda     a:Process::state,x
+        cmp     #PROCESS_WAIT_VFORK
+        bne     no_vfork
+        
         ; Set parent as running
         lda     #PROCESS_READY
         sta     a:Process::state,x
 
-        ; Load stack
-        lda     a:Process::stack_p,x
-        tcs
-        inc
-        inc
-        tcd
-
-        ; Store parent as active process
-        stx     current_process_p
-
-        ; Push the child PID
-        phy
-
-        ; Call term_proc on child PID
-        phy
-        jsr     term_proc
-        rep     #$30
-        ply
-
+no_vfork:
         ; Unlock scheduler mutex
         dec     disable_scheduler
-
-        ; Pull child PID to A
-        pla
-
-        rts
+        
+; Loop, waiting for control to be taken away
+loop:
+        bra     loop
 .endproc
 
 .proc parent_vfork
@@ -117,7 +80,7 @@ is_vfork:
         phk
         pea     parent_vfork
         php
-        pea     1
+        pea     $FFFF
         phx
         phy
         phd
@@ -144,6 +107,10 @@ is_vfork:
         ldx     current_process_p
         lda     #PROCESS_READY
         sta     a:Process::state,x
+        
+        ; Store child PID as parent return
+        lda     a:Process::pid,x
+        sta     8,s
 
         ; Zero segment bases memory ownership
         stz     a:Process::text_base,x
@@ -183,10 +150,12 @@ is_vfork:
         ply
         ply
 
+        ; Move D accordingly
         tdc
         sub     #32
         tcd
 
+        ; ISR frame for child
         sep     #$20
         pla
         ply
