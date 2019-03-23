@@ -103,10 +103,7 @@ is_vfork:
         rts
 .endproc
 
-.proc end_vfork
-        
-
-
+.proc parent_vfork
         rts
 .endproc
 
@@ -115,6 +112,16 @@ is_vfork:
 .proc vfork
         jsr     clone_current_proc
         rep     #$30
+
+        ; Push ISR frame for parent
+        phk
+        pea     parent_vfork
+        php
+        pea     1
+        phx
+        phy
+        phd
+        phb
 
         ; Lock scheduler mutex
         inc     disable_scheduler
@@ -148,7 +155,7 @@ is_vfork:
         ; Unlock scheduler mutex
         dec     disable_scheduler
 
-        ; Replicate last 20 bytes of stack and reposition D in these
+        ; Replicate last 32 bytes of stack and reposition D in these
         ; When syscall returns, D will be the correct value but the stack will be offset down to ensure no clobbering
 
         ; Transfer original SP to A
@@ -158,8 +165,8 @@ is_vfork:
         tax
         inx
 
-        ; Subtract 20 from SP
-        sub     #20
+        ; Subtract 32 from SP
+        sub     #32
         tcs
 
         ; Transfer new SP + 1 to Y
@@ -167,7 +174,7 @@ is_vfork:
         iny
 
         ; Call memcpy to create duplicate of current stack
-        pea     20  ; Push number of bytes to copy
+        pea     32  ; Push number of bytes to copy
         phx         ; Push original SP + 1
         phy         ; Push new SP + 1
         jsr     memcpy
@@ -177,8 +184,19 @@ is_vfork:
         ply
 
         tdc
-        sub     #20
+        sub     #32
         tcd
+
+        sep     #$20
+        pla
+        ply
+        ply
+        ply
+        ply
+        pla
+        ply
+        pla
+        rep     #$20
 
         ; Child returns with 0
         lda     #0
@@ -441,9 +459,6 @@ failed:
         rep     #$30
         ply
 
-        cop     2
-        rep     #$30
-
         ; Lock scheduler mutex
         inc     disable_scheduler
 
@@ -504,8 +519,6 @@ failed:
 
         enter
 
-        
-        cop 2
         ; If parent is waiting for vfork to complete, complete it
         ldx     current_process_p
         lda     a:Process::ppid,x
@@ -522,8 +535,6 @@ done_vfork_status:
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
-        
-        cop     2
 
 failed:
         leave

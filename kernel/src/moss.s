@@ -193,31 +193,9 @@ failed:
         ; Setup system tick timer
         jsr     setup_systick_timer
 
-        ; Setup stdin
-        pea     O_RDONLY
-        pea     dev_ttyS0_path
-        cop     3
-        rep     #$30
-        ply
-        ply
-
-        ; Setup stdout
-        pea     O_WRONLY
-        pea     dev_ttyS0_path
-        cop     3
-        rep     #$30
-        ply
-        ply
-
-        ; Setup stderr
-        pea     O_WRONLY
-        pea     dev_ttyS0_path
-        cop     3
-        rep     #$30
-        ply
-        ply
-
         cop     $0D
+        cmp     #0
+        bne     loop
 
         pea     dev_prgload_path
         cop     $0C

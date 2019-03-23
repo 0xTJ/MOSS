@@ -39,14 +39,36 @@ loop_forever:
 
 .proc main
         enter
-        
-        cop 2
+
+        ; Setup stdin
+        pea     O_RDONLY
+        pea     dev_ttyS0_path
+        cop     3
+        rep     #$30
+        ply
+        ply
+
+        ; Setup stdout
+        pea     O_WRONLY
+        pea     dev_ttyS0_path
+        cop     3
+        rep     #$30
+        ply
+        ply
+
+        ; Setup stderr
+        pea     O_WRONLY
+        pea     dev_ttyS0_path
+        cop     3
+        rep     #$30
+        ply
+        ply
 
         ; Print init_welcome_string to stdout
-        ; pea     init_welcome_string
-        ; jsr     puts
-        ; rep     #$30
-        ; ply
+        pea     init_welcome_string
+        jsr     puts
+        rep     #$30
+        ply
 
         ; Start running process 2
         ; pea     0
@@ -59,13 +81,20 @@ loop_forever:
         ; ply
         ; ply
         ; ply
+loop:
+        jsr     getchar
+        rep     #$30
 
-loop_forever:
-        cop 2   
-        pea     init_welcome_string
-        jsr     puts
+        pha
+        jsr     putchar
         rep     #$30
         ply
+
+        cop 2
+        
+        bra     loop
+
+loop_forever:
         bra     loop_forever
 
         leave
