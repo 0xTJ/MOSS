@@ -17,7 +17,7 @@ prgload_driver:
 .rodata
 
 prgload_name:
-        .asciiz "prgload"
+        .asciiz "init"
 .export user_o65
 user_o65:
         .incbin "../../../user/user.o65"

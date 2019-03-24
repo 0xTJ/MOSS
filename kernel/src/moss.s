@@ -25,7 +25,7 @@
 .rodata
 
 dev_prgload_path:
-        .asciiz "/dev/prgload"
+        .asciiz "/dev/init"
 
 .code
 
@@ -43,7 +43,7 @@ dev_prgload_path:
         sta     TIFR
 
         ; Load T2 values
-        T2Freq  = 100
+        T2Freq  = 1
         lda     #.lobyte((F_CLK / 16) / T2Freq)
         sta     T2CL
         lda     #.hibyte((F_CLK / 16) / T2Freq)
@@ -86,5 +86,6 @@ dev_prgload_path:
         cop     $0C
 
 loop:
+        ; cop     2
         bra     loop
 .endproc

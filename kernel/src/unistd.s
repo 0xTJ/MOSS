@@ -31,7 +31,7 @@ tmp_str:
 
         ; Lock scheduler mutex
         inc     disable_scheduler
-        
+
         ; Call terminate on process
         lda     current_process_p
         tax
@@ -42,6 +42,7 @@ tmp_str:
         ply
 
         ; Load parent struct pointer to X
+        ldx     current_process_p
         lda     a:Process::ppid,x
         asl
         tax
@@ -52,7 +53,7 @@ tmp_str:
         lda     a:Process::state,x
         cmp     #PROCESS_WAIT_VFORK
         bne     no_vfork
-        
+
         ; Set parent as running
         lda     #PROCESS_READY
         sta     a:Process::state,x
@@ -60,7 +61,7 @@ tmp_str:
 no_vfork:
         ; Unlock scheduler mutex
         dec     disable_scheduler
-        
+
 ; Loop, waiting for control to be taken away
 loop:
         bra     loop
@@ -107,7 +108,7 @@ loop:
         ldx     current_process_p
         lda     #PROCESS_READY
         sta     a:Process::state,x
-        
+
         ; Store child PID as parent return
         lda     a:Process::pid,x
         sta     8,s

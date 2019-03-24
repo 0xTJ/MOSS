@@ -233,8 +233,6 @@ failed:
         pea     tmp_str
         jsr     rls
 
-        cop 2
-
 loop:
         jsr     getchar
         rep     #$30

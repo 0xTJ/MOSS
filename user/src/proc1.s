@@ -69,23 +69,14 @@ loop_forever:
         jsr     puts
         rep     #$30
         ply
-        
-        jsr     vfork
-        
-        cop     2
-        jsr     _exit
+
 
         ; Start running process 2
-        ; pea     0
-        ; pea     0
-        ; pea     $EFFF
-        ; pea     proc2
-        ; jsr     clone
-        ; rep     #$30
-        ; ply
-        ; ply
-        ; ply
-        ; ply
+        jsr     vfork
+        cmp     #0
+        bne     parent
+        jsr     proc2
+parent:
 
 loop_forever:
         bra     loop_forever
@@ -93,12 +84,12 @@ loop_forever:
         leave
         rts
 .endproc
- 
+
 .bss
 
 tmp_str:
         .res    32
- 
+
 .rodata
 
 dev_ttyS0_path:
