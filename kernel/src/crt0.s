@@ -19,8 +19,8 @@
 .segment "ROM_LOAD"
 
         ; Equivalent to .asciiz "WDC"
-        EOR     ['D'],Y
-        EOR     0,S
+        ; EOR     ['D'],Y
+        ; EOR     0,S
         jmp     init
 
 

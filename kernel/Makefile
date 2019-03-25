@@ -14,8 +14,8 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/**.o) $
 all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET)
-	bin2mot -O0x008000 -L$(shell tohex $(shell filesize $(TARGET))) -2 -H $^
-	bin2mot -O0x00DEF8 -L$(shell tohex $(shell filesize $(ROMLOAD))) -2 -H -A $^
+	bin2mot -O0x008000 -L$(shell tohex $(shell filesize $(TARGET))) -2 -H $^ $@
+	bin2mot -O0x00DEF8 -L$(shell tohex $(shell filesize $(ROMLOAD))) -2 -H -A romload.bin $@
 
 $(TARGET): $(OBJS) $(wildcard ../*/*.o65) mensch.cfg
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
