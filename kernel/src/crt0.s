@@ -16,13 +16,21 @@
 .import __STACK_LOAD__
 .import main
 
+.segment "ROM_LOAD"
+
+        ; Equivalent to .asciiz "WDC"
+        EOR     ['D'],Y
+        EOR     0,S
+        jmp     init
+
+
 .segment "STARTUP"
 
 .export init
 init:
         ; Equivalent to .asciiz "WDC"
-        ; EOR ['D'],Y
-        ; EOR 0,S
+        ; EOR     ['D'],Y
+        ; EOR     0,S
 
         ; Setup native 16-bit mode
         sei
