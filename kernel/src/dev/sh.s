@@ -17,10 +17,10 @@ prgload_driver:
 .rodata
 
 prgload_name:
-        .asciiz "init"
+        .asciiz "sh"
 .export user_o65
 user_o65:
-        .incbin "../../../user/user.o65"
+        .incbin "../../../sh/sh.o65"
 
 .code
 

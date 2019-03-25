@@ -5,7 +5,7 @@ CFLAGS = --cpu 65816 -l $(<:.c=.lst) --create-dep $(<:.c=.d)
 LDFLAGS = --cpu 65816 -C mensch.cfg -m $(@).map --no-target-lib -vm
 
 TARGET = moss.bin
-AS_SRC := $(wildcard src/*.s) $(wildcard src/*/*.s) $(wildcard ../common/lib/*.s) $(wildcard ../common/lib/*/*.s)
+AS_SRC := $(wildcard src/*.s) $(wildcard src/**/*.s) $(wildcard ../common/lib/*.s) $(wildcard ../common/lib/**/*.s)
 OBJS := $(AS_SRC:.s=.o)
 DEPS := $(OBJS:.o=.d)
 DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(wildcard src/*.d) $(wildcard src/*/*.d) $(wildcard src/*.lst) $(wildcard src/*/*.lst))) $(TARGET) $(TARGET).mot $(TARGET).map
@@ -13,9 +13,9 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(
 all: $(TARGET).mot
 
 $(TARGET).mot: $(TARGET)
-	bin2mot -O0x008000 -L0x002300 -2 -H $^
+	bin2mot -O0x008000 -L0x002A00 -2 -H $^
 
-$(TARGET): $(OBJS) ../user/user.o65 mensch.cfg
+$(TARGET): $(OBJS) $(wildcard ../*/*.o65) mensch.cfg
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
 
 .PHONY: clean

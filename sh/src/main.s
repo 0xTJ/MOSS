@@ -27,8 +27,6 @@ level_string:
         .asciiz "+-- "
 four_spaces_string:
         .asciiz "    "
-dev_prgload_path:
-        .asciiz "/dev/prgload"
 
 .code
 
@@ -226,8 +224,8 @@ failed:
         rts
 .endproc
 
-.export proc2
-.proc proc2
+.global main
+.proc main
         enter
 
         pea     tmp_str

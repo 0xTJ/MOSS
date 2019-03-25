@@ -10,33 +10,14 @@
 .include "unistd.inc"
 .include "sched.inc"
 
-.import proc2
+.rodata
 
-.segment "STARTUP"
-
-.proc _start
-        enter
-
-        ; Setup stack frame
-        lda     z:2 ; argv
-        pha
-        lda     z:0 ; argc
-        pha
-
-        ; Call main
-        jsr     main
-        rep     #$30
-
-        ; Call exit
-        pha
-        jsr     exit
-
-loop_forever:
-        bra     loop_forever
-.endproc
+sh_path:
+        .asciiz "/dev/sh"
 
 .code
 
+.global main
 .proc main
         enter
 
@@ -70,12 +51,11 @@ loop_forever:
         rep     #$30
         ply
 
-
-        ; Start running process 2
         jsr     vfork
         cmp     #0
-        bne     parent
-        jsr     proc2
+        bne     loop_forever
+        pea     sh_path
+        cop     $0C
 parent:
 
 loop_forever:
@@ -97,5 +77,3 @@ dev_ttyS0_path:
 init_welcome_string:
         .byte $0D
         .asciiz "Welcome to the init process of MOSS!"
-dev_prgload_path:
-        .asciiz "/dev/prgload"
