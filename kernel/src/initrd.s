@@ -14,14 +14,6 @@
 
 .rodata
 
-root_name:
-        .asciiz ""
-dev_name:
-        .asciiz "dev"
-sh_name:
-        .asciiz "sh"
-init_name:
-        .asciiz "init"
 sh_o65:
         .incbin "../../sh/sh.o65"
 init_o65:
@@ -102,12 +94,6 @@ initrd_init_file:
 ; unsigned int fs_initrd_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_initrd_read
         enter
-
-        lda     z:arg 0 ; node
-        pha
-        jsr     puts
-        rep     #$30
-        ply
         
         ; Push number of bytes to read
         lda     z:arg 4 ; size
@@ -250,7 +236,7 @@ failed:
 try_0:
         lda     z:arg 2 ; name
         pha
-        pea     root_name
+        pea     initrd_root_dir + FSNode::name
         jsr     strcmp
         rep     #$30
         ply
@@ -276,7 +262,7 @@ try_0:
 try_1:
         lda     z:arg 2 ; name
         pha
-        pea     dev_name
+        pea     initrd_dev_dir + FSNode::name
         jsr     strcmp
         rep     #$30
         ply
@@ -301,7 +287,7 @@ try_1:
 try_2:
         lda     z:arg 2 ; name
         pha
-        pea     sh_name
+        pea     initrd_sh_file + FSNode::name
         jsr     strcmp
         rep     #$30
         ply
@@ -326,7 +312,7 @@ try_2:
 try_3:
         lda     z:arg 2 ; name
         pha
-        pea     init_name
+        pea     initrd_init_file + FSNode::name
         jsr     strcmp
         rep     #$30
         ply
