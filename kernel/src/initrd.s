@@ -8,6 +8,7 @@
 .include "functions.inc"
 .include "dirent.inc"
 .include "filesys.inc"
+.include "stdio.inc"
 .include "stdlib.inc"
 .include "string.inc"
 
@@ -19,6 +20,12 @@ dev_name:
         .asciiz "dev"
 sh_name:
         .asciiz "sh"
+init_name:
+        .asciiz "init"
+sh_o65:
+        .incbin "../../sh/sh.o65"
+init_o65:
+        .incbin "../../init/init.o65"
 
 .data
 
@@ -48,8 +55,8 @@ initrd_dev_dir:
         .word   0                   ; impl
         .addr   0                   ; ptr
 
-initrd_sh:
-        .byte   's', 'h', '0', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
+initrd_sh_file:
+        .byte   's', 'h', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
         .word   FS_FILE             ; flags
         .word   2                   ; inode
         .addr   fs_initrd_read      ; read
@@ -58,7 +65,20 @@ initrd_sh:
         .addr   0                   ; close
         .addr   0                   ; readdir
         .addr   0                   ; finddir
-        .word   0                   ; impl
+        .word   sh_o65              ; impl
+        .addr   0                   ; ptr
+
+initrd_init_file:
+        .byte   'i', 'n', 'i', 't', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
+        .word   FS_FILE             ; flags
+        .word   3                   ; inode
+        .addr   fs_initrd_read      ; read
+        .addr   0                   ; write
+        .addr   0                   ; open
+        .addr   0                   ; close
+        .addr   0                   ; readdir
+        .addr   0                   ; finddir
+        .word   init_o65            ; impl
         .addr   0                   ; ptr
 
 .code
@@ -83,6 +103,12 @@ initrd_sh:
 .proc fs_initrd_read
         enter
 
+        lda     z:arg 0 ; node
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        
         ; Push number of bytes to read
         lda     z:arg 4 ; size
         pha
@@ -148,7 +174,6 @@ failed:
 
         ; Return 0 on success
         lda     #0
-
         bra     done
 
 not_0:
@@ -158,9 +183,10 @@ not_0:
         jne     not_1
 
         ; Push source string
-        pea     initrd_sh + FSNode::name
+        pea     initrd_sh_file + FSNode::name
 
         ; Push destination string
+        lda     z:arg 4 ; result
         add     #DirEnt::name
         pha
 
@@ -169,16 +195,42 @@ not_0:
         ply
         ply
 
-        lda     initrd_sh + FSNode::inode
+        lda     initrd_sh_file + FSNode::inode
         ldx     z:arg 4 ; result
         sta     a:DirEnt::inode,x
 
         ; Return 0 on success
         lda     #0
-
         bra     done
 
 not_1:
+        ; Skip if this is not index 2
+        lda     z:arg 2 ; index
+        cmp     #2
+        jne     not_2
+
+        ; Push source string
+        pea     initrd_init_file + FSNode::name
+
+        ; Push destination string
+        lda     z:arg 4 ; result
+        add     #DirEnt::name
+        pha
+
+        jsr     strcpy
+        rep     #$30
+        ply
+        ply
+
+        lda     initrd_init_file + FSNode::inode
+        ldx     z:arg 4 ; result
+        sta     a:DirEnt::inode,x
+
+        ; Return 0 on success
+        lda     #0
+        bra     done
+
+not_2:
         bra     failed
 
 done:
@@ -254,11 +306,11 @@ try_2:
         rep     #$30
         ply
         cmp     #0
-        bne     failed
+        bne     try_3
 
         ; Use memmove to fill result
         pea     .sizeof(FSNode)
-        pea     initrd_sh
+        pea     initrd_sh_file
         lda     z:arg 4 ; result
         pha
         jsr     memmove
@@ -271,6 +323,34 @@ try_2:
         lda     #0
         bra     done
 
+try_3:
+        lda     z:arg 2 ; name
+        pha
+        pea     init_name
+        jsr     strcmp
+        rep     #$30
+        ply
+        cmp     #0
+        bne     try_4
+
+        ; Use memmove to fill result
+        pea     .sizeof(FSNode)
+        pea     initrd_init_file
+        lda     z:arg 4 ; result
+        pha
+        jsr     memmove
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Return 0
+        lda     #0
+        bra     done
+
+try_4:
+        bra     failed
+        
 done:
         leave
         rts

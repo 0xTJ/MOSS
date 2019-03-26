@@ -25,7 +25,7 @@
 .rodata
 
 init_path:
-        .asciiz "/dev/init"
+        .asciiz "/init"
 
 .code
 
