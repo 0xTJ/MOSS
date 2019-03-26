@@ -228,18 +228,8 @@ failed:
 .proc main
         enter
 
-        
-        
-loop:
-        jsr     getchar
-        rep     #$30
-
-        pha
-        jsr     putchar
-        rep     #$30
-        ply
-
-        bra     loop
+        pea     tmp_str
+        jsr     rls
 
         leave
         rts

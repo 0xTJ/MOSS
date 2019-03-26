@@ -14,10 +14,12 @@
 
 .rodata
 
-sh_o65:
-        .incbin "../../sh/sh.o65"
 init_o65:
         .incbin "../../init/init.o65"
+sh_o65:
+        .incbin "../../sh/sh.o65"
+ls_o65:
+        .incbin "../../ls/ls.o65"
 
 .data
 
@@ -71,6 +73,19 @@ initrd_init_file:
         .addr   0                   ; readdir
         .addr   0                   ; finddir
         .word   init_o65            ; impl
+        .addr   0                   ; ptr
+
+initrd_ls_file:
+        .byte   'l', 's', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
+        .word   FS_FILE             ; flags
+        .word   4                   ; inode
+        .addr   fs_initrd_read      ; read
+        .addr   0                   ; write
+        .addr   0                   ; open
+        .addr   0                   ; close
+        .addr   0                   ; readdir
+        .addr   0                   ; finddir
+        .word   ls_o65              ; impl
         .addr   0                   ; ptr
 
 .code
@@ -217,6 +232,33 @@ not_1:
         bra     done
 
 not_2:
+        ; Skip if this is not index 2
+        lda     z:arg 2 ; index
+        cmp     #3
+        jne     not_3
+
+        ; Push source string
+        pea     initrd_ls_file + FSNode::name
+
+        ; Push destination string
+        lda     z:arg 4 ; result
+        add     #DirEnt::name
+        pha
+
+        jsr     strcpy
+        rep     #$30
+        ply
+        ply
+
+        lda     initrd_ls_file + FSNode::inode
+        ldx     z:arg 4 ; result
+        sta     a:DirEnt::inode,x
+
+        ; Return 0 on success
+        lda     #0
+        bra     done
+
+not_3:
         bra     failed
 
 done:
@@ -257,7 +299,7 @@ try_0:
 
         ; Return 0
         lda     #0
-        bra     done
+        jmp     done
 
 try_1:
         lda     z:arg 2 ; name
@@ -335,6 +377,31 @@ try_3:
         bra     done
 
 try_4:
+        lda     z:arg 2 ; name
+        pha
+        pea     initrd_ls_file + FSNode::name
+        jsr     strcmp
+        rep     #$30
+        ply
+        cmp     #0
+        bne     try_5
+
+        ; Use memmove to fill result
+        pea     .sizeof(FSNode)
+        pea     initrd_ls_file
+        lda     z:arg 4 ; result
+        pha
+        jsr     memmove
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Return 0
+        lda     #0
+        bra     done
+
+try_5:
         bra     failed
         
 done:

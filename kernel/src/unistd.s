@@ -376,6 +376,10 @@ failed:
         rep     #$30
         ply
         ply
+        
+        ; If open failed, fail
+        cmp     #$FFFF
+        jeq     failed
 
         ; Push fd for later
         pha
@@ -385,6 +389,11 @@ failed:
         jsr     malloc
         rep     #$30
         ply
+        
+        ; If malloc failed, fail.
+        ; fd is currently latest on stack, so close that
+        cmp     #0
+        jeq     failed_malloc
 
         ; Pull fd to X, push buffer twice, and push fd
         plx
@@ -417,6 +426,11 @@ failed:
         jsr     load_o65
         rep     #$30
         ply
+        
+        ; If load_o65 failed, fail
+        ; Buffer is the latest on stack, so free that
+        cmp     #0
+        jeq     failed_load_o65
 
         ; Pull buffer to Y, push new stack pointer and stack base
         ply
@@ -429,14 +443,14 @@ failed:
         rep     #$30
         ply
 
-        ; Lock scheduler mutex
-        inc     disable_scheduler
-
         ; Pull new SP to A
         pla
 
         ; Pull new stack_base to X
         plx
+
+        ; Lock scheduler mutex
+        inc     disable_scheduler
 
         ; Exit context to allow access to return address
         leave
@@ -506,7 +520,22 @@ done_vfork_status:
         ; Unlock scheduler mutex
         dec     disable_scheduler
 
+failed_malloc:
+        ; fd is currently latest on stack, so close that
+        jsr     close
+        rep     #$30
+        ply
+        bra     failed
+        
+failed_load_o65:
+        ; Buffer is the latest on stack, so free that
+        jsr     free
+        rep     #$30
+        ply
+        bra     failed
+        
 failed:
+        lda     #$FFFF
         leave
         rts
 .endproc
