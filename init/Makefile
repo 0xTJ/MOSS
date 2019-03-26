@@ -5,14 +5,15 @@ CFLAGS = --cpu 65816 -l $(<:.c=.lst) --create-dep $(<:.c=.d)
 LDFLAGS = --cpu 65816 -C user.cfg -m $(<:.o65=.map) --no-target-lib -vm
 
 TARGET = init.o65
-AS_SRC := $(wildcard src/*.s) $(wildcard src/**/*.s) $(wildcard ../lib/*.s) $(wildcard ../lib/**/*.s) $(wildcard ../common/lib/*.s) $(wildcard ../common/lib/**/*.s)
+LIB = ../lib/clib.lib
+AS_SRC := $(wildcard src/*.s) $(wildcard src/**/*.s)
 OBJS := $(AS_SRC:.s=.o)
 DEPS := $(OBJS:.o=.d)
-DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/**/*.o) $(wildcard src/*.d) $(wildcard src/**/*.d) $(wildcard src/*.lst) $(wildcard src/**/*.lst) $(wildcard ../common/lib/*.o) $(wildcard ../common/lib/*.d) $(wildcard ../common/lib/*.lst))) $(TARGET)
+DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/**/*.o) $(wildcard src/*.d) $(wildcard src/**/*.d) $(wildcard src/*.lst) $(wildcard src/**/*.lst))) $(TARGET)
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) $(LIB)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 .PHONY: clean

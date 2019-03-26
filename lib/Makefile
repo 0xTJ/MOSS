@@ -4,8 +4,8 @@ CC = cl65
 CFLAGS = --cpu 65816 -l $(<:.c=.lst) --create-dep $(<:.c=.d)
 LDFLAGS = --cpu 65816 -C user.cfg -m $(<:.o65=.map) --no-target-lib -vm
 
-TARGET = sh.o65
-LIB = ../lib/clib.lib
+TARGET = clib.lib
+COMMON_LIB = ../common/common.lib
 AS_SRC := $(wildcard src/*.s) $(wildcard src/**/*.s)
 OBJS := $(AS_SRC:.s=.o)
 DEPS := $(OBJS:.o=.d)
@@ -13,8 +13,9 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/**/*.o) $
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS) $(LIB)
-	$(CC) $(LDFLAGS) $^ -o $@
+$(TARGET): $(OBJS)
+	copy $(subst /,\,$(COMMON_LIB) $(TARGET))
+	ar65 r $@ $^
 
 .PHONY: clean
 clean:

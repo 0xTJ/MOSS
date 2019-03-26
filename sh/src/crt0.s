@@ -24,7 +24,7 @@
         lda     z:0 ; argc
         pha
 
-        ; Call main
+        ; Call mainm
         jsr     main
         rep     #$30
 
