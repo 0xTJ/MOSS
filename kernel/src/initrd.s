@@ -11,6 +11,15 @@
 .include "stdlib.inc"
 .include "string.inc"
 
+.rodata
+
+root_name:
+        .asciiz ""
+dev_name:
+        .asciiz "dev"
+sh_name:
+        .asciiz "sh"
+
 .data
 
 initrd_root_dir:
@@ -39,13 +48,25 @@ initrd_dev_dir:
         .word   0                   ; impl
         .addr   0                   ; ptr
 
+initrd_sh:
+        .byte   's', 'h', '0', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
+        .word   FS_FILE             ; flags
+        .word   2                   ; inode
+        .addr   fs_initrd_read      ; read
+        .addr   0                   ; write
+        .addr   0                   ; open
+        .addr   0                   ; close
+        .addr   0                   ; readdir
+        .addr   0                   ; finddir
+        .word   0                   ; impl
+        .addr   0                   ; ptr
+
 .code
 
 ; void initrd_init(void)
 .constructor initrd_init, 6
 .proc initrd_init
         enter
-        rep     #$30
 
         pea     initrd_root_dir
         pea     root_dir
@@ -58,21 +79,86 @@ initrd_dev_dir:
         rts
 .endproc
 
+; unsigned int fs_initrd_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+.proc fs_initrd_read
+        enter
+
+        ; Push number of bytes to read
+        lda     z:arg 4 ; size
+        pha
+
+        ; Push source pointer
+        ldx     z:arg 0 ; node
+        lda     a:FSNode::impl,x
+        add     z:arg 2 ; offset
+        pha
+
+        ; Push destination pointer
+        lda     z:arg 6 ; buffer
+        pha
+
+        jsr     memcpy
+        rep     #$30
+        ply
+        ply
+        ply
+
+        lda     z:arg 4 ; size
+
+done:
+        leave
+        rts
+
+failed:
+        lda     #$FFFF
+        bra     done
+.endproc
+
 ; int fs_initrd_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
 .proc fs_initrd_readdir
         enter
         rep     #$30
 
+        ; Fail if this is not the root
+        ; lda     z:arg 0 ; node
+        ; cmp     #initrd_root_dir
+        ; bne     failed
+
+        ; Skip if this is not index 0
         lda     z:arg 2 ; index
         cmp     #0
         jne     not_0
 
-        ; Push result DirEnt struct pointer
-        lda     z:arg 4 ; result
-        pha
-
         ; Push source string
         pea     initrd_dev_dir + FSNode::name
+
+        ; Push destination string
+        lda     z:arg 4 ; result
+        add     #DirEnt::name
+        pha
+
+        jsr     strcpy
+        rep     #$30
+        ply
+        ply
+
+        lda     initrd_dev_dir + FSNode::inode
+        ldx     z:arg 4 ; result
+        sta     a:DirEnt::inode,x
+
+        ; Return 0 on success
+        lda     #0
+
+        bra     done
+
+not_0:
+        ; Skip if this is not index 1
+        lda     z:arg 2 ; index
+        cmp     #1
+        jne     not_1
+
+        ; Push source string
+        pea     initrd_sh + FSNode::name
 
         ; Push destination string
         add     #DirEnt::name
@@ -83,8 +169,8 @@ initrd_dev_dir:
         ply
         ply
 
-        lda     initrd_dev_dir + FSNode::inode
-        plx     ; result Dirent Struct address
+        lda     initrd_sh + FSNode::inode
+        ldx     z:arg 4 ; result
         sta     a:DirEnt::inode,x
 
         ; Return 0 on success
@@ -92,7 +178,7 @@ initrd_dev_dir:
 
         bra     done
 
-not_0:
+not_1:
         bra     failed
 
 done:
@@ -109,26 +195,41 @@ failed:
         enter
         rep     #$30
 
+try_0:
         lda     z:arg 2 ; name
         pha
-
         pea     root_name
         jsr     strcmp
         rep     #$30
         ply
+        ply
         cmp     #0
-        bne     try_next_0
+        bne     try_1
 
-        lda     #initrd_root_dir
+        ; Use memmove to fill result
+        pea     .sizeof(FSNode)
+        pea     initrd_root_dir
+        lda     z:arg 4 ; result
+        pha
+        jsr     memmove
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Return 0
+        lda     #0
         bra     done
 
-try_next_0:
+try_1:
+        lda     z:arg 2 ; name
+        pha
         pea     dev_name
         jsr     strcmp
         rep     #$30
         ply
         cmp     #0
-        bne     try_next_1
+        bne     try_2
 
         ; Use memmove to fill result
         pea     .sizeof(FSNode)
@@ -140,22 +241,41 @@ try_next_0:
         ply
         ply
         ply
-        
+
+        ; Return 0
         lda     #0
-        
         bra     done
 
-try_next_1:
-        lda     #$FFFF
+try_2:
+        lda     z:arg 2 ; name
+        pha
+        pea     sh_name
+        jsr     strcmp
+        rep     #$30
+        ply
+        cmp     #0
+        bne     failed
+
+        ; Use memmove to fill result
+        pea     .sizeof(FSNode)
+        pea     initrd_sh
+        lda     z:arg 4 ; result
+        pha
+        jsr     memmove
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ; Return 0
+        lda     #0
+        bra     done
 
 done:
         leave
         rts
+
+failed:
+        lda     #$FFFF
+        bra     done
 .endproc
-
-.rodata
-
-root_name:
-        .asciiz ""
-dev_name:
-        .asciiz "dev"

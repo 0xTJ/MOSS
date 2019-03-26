@@ -11,35 +11,34 @@
 
 .bss
 
-prgload_driver:
+init_driver:
         .tag    CharDriver
 
 .rodata
 
-prgload_name:
+init_name:
         .asciiz "init"
-.export user_o65
-user_o65:
+init_o65:
         .incbin "../../../init/init.o65"
 
 .code
 
-.constructor dev_prgload_init
-.proc dev_prgload_init
+.constructor dev_init_init
+.proc dev_init_init
         enter
         rep     #$30
 
         ; Load driver struct address to X
-        ldx     #prgload_driver
+        ldx     #init_driver
 
         ; Write read function pointer to driver struct
-        lda     #dev_prgload_read
+        lda     #dev_init_read
         sta     a:CharDriver::read,x
 
         ; Register driver with kernel
         pea     DEV_TYPE_CHAR
-        pea     prgload_name
-        pea     prgload_driver
+        pea     init_name
+        pea     init_driver
         jsr     register_driver
         rep     #$30
         ply
@@ -50,8 +49,8 @@ user_o65:
         rts
 .endproc
 
-; ssize_t dev_prgload_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
-.proc dev_prgload_read
+; ssize_t dev_init_read(struct CharDriver *device, void *buf, size_t nbytes, off_t offset)
+.proc dev_init_read
         enter
         rep     #$10
         sep     #$20
@@ -63,7 +62,7 @@ loop:
         cpy     z:arg 4 ; nbytes
         beq     done_loop
 
-        lda     a:user_o65,y
+        lda     a:init_o65,y
 
         ; Store received byte in output buffer
         sta     a:0,x

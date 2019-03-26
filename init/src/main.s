@@ -55,7 +55,7 @@ sh_path:
         cmp     #0
         bne     loop_forever
         pea     sh_path
-        cop     $0C
+        jsr     execve
 parent:
 
 loop_forever:
