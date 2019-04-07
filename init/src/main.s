@@ -13,7 +13,7 @@
 .rodata
 
 sh_path:
-        .asciiz "/ls"
+        .asciiz "/sh"
 
 .code
 

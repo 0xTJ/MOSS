@@ -14,6 +14,7 @@
 .include "stdio.inc"
 .include "errcode.inc"
 .include "unistd.inc"
+.include "filesys.inc"
 .include "o65.inc"
 
 EXECVE_SIZE = 3000
@@ -31,6 +32,11 @@ proc_table:
 ; Disable interrupts when modifying the current process.
 disable_scheduler:
         .word   0
+
+.rodata
+
+root_path_str:
+        .asciiz "/"
 
 .code
 
@@ -71,6 +77,9 @@ disable_scheduler:
         stz     a:Process::bss_base,x
         stz     a:Process::zero_base,x
         stz     a:Process::stack_base,x
+
+        ; Set working directory to root
+        stz     a:Process::working_dir,x
 
         ; Clear file descriptors
         pea     .sizeof(Process::files_p)
@@ -235,54 +244,54 @@ failed:
 
 ; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
 ; Assumes Program Bank is $00
-.proc setup_proc
-        enter
-        rep     #$30
+; .proc setup_proc
+        ; enter
+        ; rep     #$30
 
         ; Lock scheduler mutex
-        inc     disable_scheduler
+        ; inc     disable_scheduler
 
         ; Get address to store initial stack in A
-        lda     z:arg 2 ; initial_sp
+        ; lda     z:arg 2 ; initial_sp
 
         ; Make space for main arguments
-        sub     #4
+        ; sub     #4
 
         ; Make space for ISR frame
-        sub     #.sizeof(ISRFrame)
+        ; sub     #.sizeof(ISRFrame)
 
         ; Increment stack pointer in A to get base of stack, and put into X
-        inc
-        tax
+        ; inc
+        ; tax
 
         ; Reset values
-        sep     #$20
-        stz     a:ISRFrame::prg_bnk,x
-        stz     a:ISRFrame::p_reg,x
-        stz     a:ISRFrame::dat_bnk,x
-        rep     #$20
-        stz     a:ISRFrame::dir_pag,x
+        ; sep     #$20
+        ; stz     a:ISRFrame::prg_bnk,x
+        ; stz     a:ISRFrame::p_reg,x
+        ; stz     a:ISRFrame::dat_bnk,x
+        ; rep     #$20
+        ; stz     a:ISRFrame::dir_pag,x
 
         ; Store initial PC on process's stack
-        lda     z:arg 4 ; initial_pc
-        sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
+        ; lda     z:arg 4 ; initial_pc
+        ; sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
 
         ; Put process's SP in A and struct pointer in X
-        txa
-        ldx     z:arg 0 ; proc
+        ; txa
+        ; ldx     z:arg 0 ; proc
 
         ; Decrement SP because it was one above
-        dec
+        ; dec
 
         ; Store process's SP in struct
-        sta     a:Process::stack_p,x
+        ; sta     a:Process::stack_p,x
 
         ; Unlock scheduler mutex
-        dec     disable_scheduler
+        ; dec     disable_scheduler
 
-        leave
-        rts
-.endproc
+        ; leave
+        ; rts
+; .endproc
 
 ; struct Process *create_proc(void)
 .proc create_proc
@@ -361,6 +370,9 @@ found_empty_proc:   ; X contains new PID * 2
         stz     a:Process::bss_base,x
         stz     a:Process::zero_base,x
         stz     a:Process::stack_base,x
+
+        ; Clear working directory
+        stz     a:Process::working_dir,x
 
         ; Store X and Y
         phx

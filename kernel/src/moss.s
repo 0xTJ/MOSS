@@ -26,6 +26,8 @@
 
 init_path:
         .asciiz "/init"
+root_path:
+        .asciiz "/"
 
 .code
 
@@ -81,6 +83,11 @@ init_path:
         cop     $0D
         cmp     #0
         bne     loop
+        
+        pea     root_path
+        jsr     chdir
+        rep     #$30
+        ply
 
         pea     init_path
         cop     $0C

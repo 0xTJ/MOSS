@@ -10,6 +10,7 @@
 .include "o65.inc"
 .include "stdlib.inc"
 .include "fcntl.inc"
+.include "filesys.inc"
 .include "stdio.inc"
 .include "proc.inc"
 
@@ -363,6 +364,64 @@ failed:
         bra     done
 .endproc
 
+; int chdir(const char *path)
+.proc chdir
+        enter   2
+        
+        ; 0: void *new_node
+        
+        ; Allocate new space for node
+        pea     .sizeof(FSNode)
+        jsr     malloc
+        rep     #$30
+        ply
+        
+        cmp     #0
+        beq     failed
+        
+        ; Save to local variable
+        sta     z:var 0 ; new_node
+        
+        ; Traverse path and put into allocated node
+        pha
+        lda     z:arg 0 ; path
+        pha
+        jsr     traverse_abs_path
+        ; TODO: Also allow for relative
+        rep     #$30
+        ply
+        ply
+        
+        cmp     #$FFFF
+        beq     failed_and_free
+        
+        ; Set new dir as the one for the process, and free the old one
+        ldx     current_process_p
+        lda     a:Process::working_dir,x
+        pha
+        lda     z:var 0 ; new_node
+        sta     a:Process::working_dir,x
+        jsr     free
+        rep     #$30
+        ply
+
+        lda     #0
+       
+done:       
+        leave
+        rts
+        
+failed_and_free:
+        pha
+        jsr     free
+        rep     #$30
+        ply
+        
+failed:
+        lda     #$FFFF
+        bra     done
+.endproc
+
 ; int execve(const char *filename, char *const argv[], char *const envp[])
 ; Only to be called directly by syscall
 .proc execve
@@ -376,7 +435,7 @@ failed:
         rep     #$30
         ply
         ply
-        
+
         ; If open failed, fail
         cmp     #$FFFF
         jeq     failed
@@ -389,7 +448,7 @@ failed:
         jsr     malloc
         rep     #$30
         ply
-        
+
         ; If malloc failed, fail.
         ; fd is currently latest on stack, so close that
         cmp     #0
@@ -426,7 +485,7 @@ failed:
         jsr     load_o65
         rep     #$30
         ply
-        
+
         ; If load_o65 failed, fail
         ; Buffer is the latest on stack, so free that
         cmp     #0
@@ -526,14 +585,14 @@ failed_malloc:
         rep     #$30
         ply
         bra     failed
-        
+
 failed_load_o65:
         ; Buffer is the latest on stack, so free that
         jsr     free
         rep     #$30
         ply
         bra     failed
-        
+
 failed:
         lda     #$FFFF
         leave

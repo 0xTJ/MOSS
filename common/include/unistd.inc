@@ -10,3 +10,5 @@
 .global vfork
 ; int execve(const char *filename, char *const argv[], char *const envp[])
 .global execve
+; int chdir(const char *path)
+.global chdir

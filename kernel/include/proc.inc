@@ -29,6 +29,8 @@ PROCESS_WAIT_VFORK = 3
         bss_base    .addr
         zero_base   .addr
         stack_base  .addr
+
+        working_dir .addr
 .endstruct
 
 .global sys_tick
