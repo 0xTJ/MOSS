@@ -34,8 +34,7 @@ tmp_str:
         inc     disable_scheduler
 
         ; Call terminate on process
-        lda     current_process_p
-        tax
+        ldx     current_process_p
         lda     a:Process::pid,x
         pha
         jsr     term_proc
@@ -77,6 +76,9 @@ loop:
 .proc vfork
         jsr     clone_current_proc
         rep     #$30
+        
+        cmp     #0
+        beq     failed
 
         ; Push ISR frame for parent
         phk
@@ -172,7 +174,12 @@ loop:
         ; Child returns with 0
         lda     #0
 
+done:
         rts
+        
+failed:
+        lda     #$FFFF
+        bra     done
 .endproc
 
 EXEC_SIZE = 3000
@@ -578,6 +585,9 @@ done_vfork_status:
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
+        
+        leave
+        rts
 
 failed_malloc:
         ; fd is currently latest on stack, so close that

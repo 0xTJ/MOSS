@@ -13,7 +13,10 @@
 ; int fgetc(FILE *stream)
 .proc fgetc
         enter   2
-        rep     #$30
+        
+        ; 0: int c
+        
+        stz     z:var 0 ; c
 
         pea     1       ; read 1 byte
         tdc

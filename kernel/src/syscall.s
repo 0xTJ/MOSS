@@ -15,6 +15,7 @@
 .include "w65c265s.inc"
 .include "dirent.inc"
 .include "unistd.inc"
+.include "sys/wait.inc"
 
 .macro syscall sc_proc, arg_count
 .ifndef syscall_count
@@ -42,6 +43,7 @@ syscall close, 2
 syscall _exit, 2
 syscall execve, 6
 syscall vfork, 0
+syscall waitpid, 6
 
 .import __SYSCALL_TABLE__
 .import __SYSCALL_COUNT__
@@ -245,4 +247,8 @@ emul_mode:  ; Syscalls in emulation mode not supported
 
 .proc sc_vfork
         jmp     vfork
+.endproc
+
+.proc sc_waitpid
+        jmp     waitpid
 .endproc

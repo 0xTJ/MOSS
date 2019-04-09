@@ -21,6 +21,9 @@ EXECVE_SIZE = 3000
 
 .bss
 
+tmp_str:
+        .res    16
+
 current_process_p:
         .addr   0
 
@@ -242,57 +245,6 @@ failed:
         bra     done
 .endproc
 
-; void setup_proc(struct Process *proc, void *initial_sp, void *initial_pc)
-; Assumes Program Bank is $00
-; .proc setup_proc
-        ; enter
-        ; rep     #$30
-
-        ; Lock scheduler mutex
-        ; inc     disable_scheduler
-
-        ; Get address to store initial stack in A
-        ; lda     z:arg 2 ; initial_sp
-
-        ; Make space for main arguments
-        ; sub     #4
-
-        ; Make space for ISR frame
-        ; sub     #.sizeof(ISRFrame)
-
-        ; Increment stack pointer in A to get base of stack, and put into X
-        ; inc
-        ; tax
-
-        ; Reset values
-        ; sep     #$20
-        ; stz     a:ISRFrame::prg_bnk,x
-        ; stz     a:ISRFrame::p_reg,x
-        ; stz     a:ISRFrame::dat_bnk,x
-        ; rep     #$20
-        ; stz     a:ISRFrame::dir_pag,x
-
-        ; Store initial PC on process's stack
-        ; lda     z:arg 4 ; initial_pc
-        ; sta     a:ISRFrame::prg_cnt,x   ; Store PC on process's stack
-
-        ; Put process's SP in A and struct pointer in X
-        ; txa
-        ; ldx     z:arg 0 ; proc
-
-        ; Decrement SP because it was one above
-        ; dec
-
-        ; Store process's SP in struct
-        ; sta     a:Process::stack_p,x
-
-        ; Unlock scheduler mutex
-        ; dec     disable_scheduler
-
-        ; leave
-        ; rts
-; .endproc
-
 ; struct Process *create_proc(void)
 .proc create_proc
         enter
@@ -433,6 +385,8 @@ loop:
 
 found_prev:
         dec     disable_scheduler
+        
+        txa
 
         leave
         rts
@@ -478,7 +432,43 @@ skip:
         cpx     #PROC_NUM * 2
         blt     child_ppid_loop
 
-        ; TODO: Release resources
+        ; Load process struct to X
+        lda     z:arg 0 ; pid
+        asl
+        tax
+        lda     a:proc_table,x
+        tax
+        
+        ; Push all segments to delete
+        lda     a:Process::text_base,x
+        pha
+        lda     a:Process::data_base,x
+        pha
+        lda     a:Process::bss_base,x
+        pha
+        lda     a:Process::zero_base,x
+        pha
+        lda     a:Process::stack_base,x
+        pha
+        
+        ; Run free on all segments
+        jsr     free
+        rep     #$30
+        ply
+        jsr     free
+        rep     #$30
+        ply
+        jsr     free
+        rep     #$30
+        ply
+        jsr     free
+        rep     #$30
+        ply
+        jsr     free
+        rep     #$30
+        ply
+        
+        ; TODO: Release other resources
 
         dec     disable_scheduler
 
@@ -488,7 +478,7 @@ skip:
 
 ; void destroy_proc(int pid)
 .proc destroy_proc
-        enter   2
+        enter   6
 
         ; 0: stuct proc *proc_p
         ; 2: stuct proc *next_p
@@ -499,7 +489,7 @@ skip:
         ; Load PID to destroy to A
         lda     z:arg 0 ; pid
 
-        ; Get address of process struct into X and proc_p
+        ; Get address of process struct into proc_p
         asl
         tax
         lda     a:proc_table,x
@@ -514,10 +504,12 @@ skip:
         phx             ; proc_p
         jsr     find_previous_proc
         rep     #$30
+        ply
         sta     z:var 4 ; prev_p
-
+        
         ; Store the next of the process to be destroyed to the next of the previous
-        tax             ; prev_p
+        ldx     z:var 4 ; prev_p
+        ; tax             ; prev_p
         lda     z:var 2 ; next_p
         sta     a:Process::next,x
 
