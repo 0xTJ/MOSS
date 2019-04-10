@@ -40,6 +40,35 @@ out_of_proc_str:
 
 .code
 
+; void print_int(int value, int base)
+.proc print_int
+        enter   6
+
+        lda     z:arg 2 ; base
+        pha
+        tda
+        add     #var 0
+        pha
+        lda     z:arg 0 ; value
+        pha
+        jsr     itoa
+        rep     #$30
+        ply
+        ply
+        ply
+        
+        tda
+        add     #var 0
+        pha
+        jsr     puts
+        rep     #$30
+        ply
+        ply
+
+        leave
+        rts
+.endproc
+
 .global main
 .proc main
         enter
@@ -61,6 +90,10 @@ loop:
         beq     loop
         cmp     #$0A
         beq     loop
+        cmp     #$08
+        beq     is_backspace
+        cmp     #$7F
+        beq     is_backspace
         cmp     #$0D
         beq     done_line
 
@@ -76,10 +109,29 @@ loop:
         pla
 
         ; Store character to buffer
-        ldx     line_idx
         sep     #$20
+        ldx     line_idx
         sta     line,x
         inx
+        stz     line,x
+        stx     line_idx
+        rep     #$20
+
+        bra     loop
+
+is_backspace:
+        ldx     line_idx
+        cpx     #0
+        beq     loop
+
+        pha
+        jsr     putchar
+        rep     #$30
+        ply
+
+        sep     #$20
+        ldx     line_idx
+        dex
         stz     line,x
         stx     line_idx
         rep     #$20

@@ -122,6 +122,8 @@ loop:
         stz     a:Process::bss_base,x
         stz     a:Process::zero_base,x
         stz     a:Process::stack_base,x
+        
+        ; TODO: copy current dir
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
