@@ -2,7 +2,7 @@ AS = cl65
 ASFLAGS = --cpu 65816 -c -l $(<:.s=.lst) -g --create-dep $(<:.s=.d) --asm-include-dir include --asm-include-dir ../common/include
 CC = cl65
 CFLAGS = --cpu 65816 -l $(<:.c=.lst) --create-dep $(<:.c=.d)
-LDFLAGS = --cpu 65816 -C user.cfg -m $(<:.o65=.map) --no-target-lib -vm
+LDFLAGS = --cpu 65816 -C user.cfg -m $(@:.o65=.map) --no-target-lib -vm
 
 TARGET = ls.o65
 LIB = ../lib/clib.lib
