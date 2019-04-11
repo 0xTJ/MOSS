@@ -176,16 +176,16 @@ done:
 .proc clone_current_proc
         enter
 
-        ; Disable interrupts to safely modify current process
-        php
-        sei
-
         ; Get new process handle
         jsr     create_proc
 
         ; Check for failure
         cmp     #0
         beq     failed
+
+        ; Disable interrupts to safely modify current process
+        php
+        sei
 
         ; Copy processor struct pointer to X
         tax
@@ -233,10 +233,10 @@ done:
 
         txa
 
-done:
         ; Enable interrupts if they were disabled
         plp
 
+done:
         leave
         rts
 
@@ -266,6 +266,7 @@ failed:
         dec     disable_scheduler
         rep     #$30
         lda     #0
+        leave
         rts
 
 found_empty_proc:   ; X contains new PID * 2
@@ -385,7 +386,7 @@ loop:
 
 found_prev:
         dec     disable_scheduler
-        
+
         txa
 
         leave
@@ -438,7 +439,7 @@ skip:
         tax
         lda     a:proc_table,x
         tax
-        
+
         ; Push all segments to delete
         lda     a:Process::text_base,x
         pha
@@ -450,7 +451,7 @@ skip:
         pha
         lda     a:Process::stack_base,x
         pha
-        
+
         ; Run free on all segments
         jsr     free
         rep     #$30
@@ -467,7 +468,7 @@ skip:
         jsr     free
         rep     #$30
         ply
-        
+
         ; TODO: Release other resources
 
         dec     disable_scheduler
@@ -506,7 +507,7 @@ skip:
         rep     #$30
         ply
         sta     z:var 4 ; prev_p
-        
+
         ; Store the next of the process to be destroyed to the next of the previous
         ldx     z:var 4 ; prev_p
         ; tax             ; prev_p

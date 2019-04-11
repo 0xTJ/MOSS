@@ -8,7 +8,7 @@
 
 .code
 
-; pid_t wait(int *wstatus)
+; pid_t wait(int *status)
 .proc wait
         enter
 

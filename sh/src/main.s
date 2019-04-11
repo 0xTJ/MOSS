@@ -8,6 +8,7 @@
 .include "stdio.inc"
 .include "dirent.inc"
 .include "fcntl.inc"
+.include "ctype.inc"
 .include "builtin.inc"
 .include "stdlib.inc"
 .include "string.inc"
@@ -34,7 +35,7 @@ line_string:
 exit_str:
         .asciiz "exit"
 cant_run_str:
-        .asciiz "No such file or directory"
+        .asciiz "Failed to execute"
 out_of_proc_str:
         .asciiz "Out of processes"
 
@@ -74,7 +75,12 @@ out_of_proc_str:
         enter
 
 main_loop:
-
+        ; Set index to 0 and store 0 to that location
+        ldx     #0
+        stx     line_idx
+        stz     line,x
+        
+        ; Put prompt
         pea     stdout
         pea     line_string
         jsr     fputs
@@ -83,24 +89,44 @@ main_loop:
         ply
 
 loop:
+        ; Get a character
         jsr     getchar
         rep     #$30
 
+        ; Check if it is printable
+        pha
+        pha
+        jsr     isprint
+        rep     #$30
+        ply
+        tax
+        pla
+        cpx     #0
+        bne     is_printable
+        
+        ; Check for EOF or NL, and loop if found
         cmp     #EOF
         beq     loop
         cmp     #$0A
         beq     loop
+        
+        ; Check for BS or DEL, and backspace if found
         cmp     #$08
         beq     is_backspace
         cmp     #$7F
         beq     is_backspace
+        
+        ; Check for CR, and loop if found
         cmp     #$0D
         beq     done_line
 
+is_printable:
+        ; Loop if at maximum index
         ldx     line_idx
         cpx     #63
         bge     loop
 
+        ; Put received character
         pha
         pha
         jsr     putchar
@@ -117,18 +143,22 @@ loop:
         stx     line_idx
         rep     #$20
 
+        ; Loop
         bra     loop
 
 is_backspace:
+        ; Don't do anything if we can't backspace
         ldx     line_idx
         cpx     #0
         beq     loop
 
+        ; Print backspace to update screen
         pha
         jsr     putchar
         rep     #$30
         ply
 
+        ; Back up index and store 0 to this location
         sep     #$20
         ldx     line_idx
         dex
@@ -136,67 +166,75 @@ is_backspace:
         stx     line_idx
         rep     #$20
 
+        ; Loop
         bra     loop
 
 done_line:
+        ; Print CR
         pea     $0D
         jsr     putchar
         rep     #$30
         ply
 
+        ; Check if it is exit, and exit if it is
         pea     exit_str
         pea     line
         jsr     strcmp
         rep     #$30
         ply
         ply
-
         cmp     #0
-        beq     exit_sh
+        bne     no_exit
+        pea     0
+        jsr     exit
+no_exit:
 
+        ; Perform vfork
         jsr     vfork
-        cmp     #0
+        
+        ; If vfork failed, handle
+        ora     #0
         bmi     out_of_proc
+        
+        ; If this is the parent process, 
         cmp     #0
-        bne     is_parent
+        bne     in_parent
 
+        ; Run command
+        pea     NULL
+        pea     NULL
         pea     line
         jsr     execve
         rep     #$30
         ply
+        ply
+        ply
 
-is_parent:
-        ldx     #0
-        stx     line_idx
-        stz     line,x
+        ; If execve returned, it failed and we must notify and _exit
+        pea     cant_run_str
+        jsr     puts
+        rep     #$30
+        ply
+        pea     $FFFF
+        jsr     _exit
 
-        cmp     #0
-        bmi     cant_run
-
+in_parent:
+        ; Wait for child to exit
+        pea     NULL
         jsr     wait
+        rep     #$30
+        ply
 
+        ; Start again
         jmp     main_loop
 
-        leave
-        rts
-
 out_of_proc:
+        ; Notify that no process could be made
         pea     out_of_proc_str
         jsr     puts
         rep     #$30
         ply
 
-        bra     is_parent
-
-cant_run:
-        pea     cant_run_str
-        jsr     puts
-        rep     #$30
-        ply
-
-        pea     $FFFF
-        jsr     _exit
-
-exit_sh:
-        jsr     exit
+        ; Start again
+        jmp     main_loop
 .endproc

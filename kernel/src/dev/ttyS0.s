@@ -60,10 +60,10 @@ tx_tail:
         lda     ARTD3
 
         ; If received char is ESC, reset system
-        ; cmp     #$1B
-        ; bne     no_reset
-        ; hard_reset
-; no_reset:
+        cmp     #$1B
+        bne     no_reset
+        hard_reset
+no_reset:
 
         ; Load tail of RX buffer
         ldx     rx_tail

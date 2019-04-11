@@ -67,16 +67,12 @@ loop:
         bra     loop
 .endproc
 
-.proc parent_vfork
-        rts
-.endproc
-
 ; pid_t vfork(void)
 ; Only to be called from syscall
 .proc vfork
         jsr     clone_current_proc
         rep     #$30
-        
+
         cmp     #0
         beq     failed
 
@@ -122,7 +118,7 @@ loop:
         stz     a:Process::bss_base,x
         stz     a:Process::zero_base,x
         stz     a:Process::stack_base,x
-        
+
         ; TODO: copy current dir
 
         ; Unlock scheduler mutex
@@ -177,8 +173,9 @@ loop:
         lda     #0
 
 done:
+parent_vfork:
         rts
-        
+
 failed:
         lda     #$FFFF
         bra     done
@@ -376,21 +373,21 @@ failed:
 ; int chdir(const char *path)
 .proc chdir
         enter   2
-        
+
         ; 0: void *new_node
-        
+
         ; Allocate new space for node
         pea     .sizeof(FSNode)
         jsr     malloc
         rep     #$30
         ply
-        
+
         cmp     #0
         beq     failed
-        
+
         ; Save to local variable
         sta     z:var 0 ; new_node
-        
+
         ; Traverse path and put into allocated node
         pha
         lda     z:arg 0 ; path
@@ -400,10 +397,10 @@ failed:
         rep     #$30
         ply
         ply
-        
+
         cmp     #$FFFF
         beq     failed_and_free
-        
+
         ; Set new dir as the one for the process, and free the old one
         ldx     current_process_p
         lda     a:Process::working_dir,x
@@ -415,17 +412,17 @@ failed:
         ply
 
         lda     #0
-       
-done:       
+
+done:
         leave
         rts
-        
+
 failed_and_free:
         pha
         jsr     free
         rep     #$30
         ply
-        
+
 failed:
         lda     #$FFFF
         bra     done
@@ -587,7 +584,7 @@ done_vfork_status:
 
         ; Unlock scheduler mutex
         dec     disable_scheduler
-        
+
         leave
         rts
 

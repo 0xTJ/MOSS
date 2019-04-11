@@ -12,9 +12,9 @@ DEL := $(patsubst %,"%",$(subst /,\,$(wildcard src/*.o) $(wildcard src/*/*.o) $(
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
-	copy $(subst /,\,$(COMMON_LIB) $(TARGET))
-	ar65 r $@ $^
+$(TARGET): $(OBJS) ../common/common.lib
+	copy $(subst /,\,$(COMMON_LIB) $@)
+	ar65 r $@ $(OBJS)
 
 .PHONY: clean
 clean:
