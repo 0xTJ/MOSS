@@ -106,15 +106,15 @@
         sep     #$20
 
         lda     #$01
-        sta     T3LL
-        stz     T3CH
+        sta     $00DF56
+        stz     $00DF67
 
         lda     #(1 << 4)
-        tsb     BCR
+        tsb     $00DF40
 
         lda     #(1 << 0)
-        trb     TER
-        tsb     TER
+        trb     $00DF43
+        tsb     $00DF43
 
         .local loop_waiting
 loop_waiting:

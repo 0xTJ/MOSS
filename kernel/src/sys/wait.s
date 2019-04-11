@@ -85,7 +85,9 @@ null_status:
 
 done:
         leave
+        rts
         
 failed:
-        
+        lda     #$FFFF
+        bra     done
 .endproc

@@ -1,4 +1,4 @@
-PROC_MAX_FILES = 8
+.define PROC_MAX_FILES 8
 
 PROC_NUM = 8
 
@@ -22,7 +22,7 @@ PROCESS_WAIT_VFORK = 3
 
         next    .addr
 
-        files_p .addr 8
+        files_p .addr PROC_MAX_FILES
 
         text_base   .addr
         data_base   .addr

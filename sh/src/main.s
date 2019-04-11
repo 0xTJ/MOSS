@@ -34,10 +34,10 @@ line_string:
         .asciiz "> "
 exit_str:
         .asciiz "exit"
-cant_run_str:
+failed_exec_str:
         .asciiz "Failed to execute"
-out_of_proc_str:
-        .asciiz "Out of processes"
+failed_fork_str:
+        .asciiz "Failed to fork"
 
 .code
 
@@ -211,7 +211,7 @@ no_exit:
         ply
 
         ; If execve returned, it failed and we must notify and _exit
-        pea     cant_run_str
+        pea     failed_exec_str
         jsr     puts
         rep     #$30
         ply
@@ -230,7 +230,7 @@ in_parent:
 
 out_of_proc:
         ; Notify that no process could be made
-        pea     out_of_proc_str
+        pea     failed_fork_str
         jsr     puts
         rep     #$30
         ply
