@@ -16,6 +16,7 @@
 .include "stdlib.inc"
 .include "unistd.inc"
 .include "errcode.inc"
+.include "vectors.inc"
 
 ; Hardware interrupt routines must accept being started in emulation mode.
 ; Software interrupts must accept being run in emulation mode, but are only required to perform their action when run in native mode.
@@ -69,11 +70,11 @@ root_path:
 
         ; Load T2 vector
         lda     #sys_tick
-        sta     NAT_IRQT2
+        sta     vectors + VectTab::Nat + NatVect::IRQT2
 
         ; Load COP vector
         lda     #sys_call
-        sta     NAT_IRQCOP
+        sta     vectors + VectTab::Nat + NatVect::IRQCOP
 
         cli
 

@@ -25,35 +25,6 @@ exit_str:
 
 .code
 
-; void print_int(int value, int base)
-.proc print_int
-        enter   6
-
-        lda     z:arg 2 ; base
-        pha
-        tda
-        add     #var 0
-        pha
-        lda     z:arg 0 ; value
-        pha
-        jsr     itoa
-        rep     #$30
-        ply
-        ply
-        ply
-
-        tda
-        add     #var 0
-        pha
-        jsr     puts
-        rep     #$30
-        ply
-        ply
-
-        leave
-        rts
-.endproc
-
 .global main
 .proc main
         enter   2
@@ -63,7 +34,7 @@ exit_str:
         ; Setup stdin
         pea     O_RDONLY
         pea     dev_ttyS0_path
-        cop     3
+        jsr     open
         rep     #$30
         ply
         ply
@@ -71,7 +42,7 @@ exit_str:
         ; Setup stdout
         pea     O_WRONLY
         pea     dev_ttyS0_path
-        cop     3
+        jsr     open
         rep     #$30
         ply
         ply
@@ -79,11 +50,13 @@ exit_str:
         ; Setup stderr
         pea     O_WRONLY
         pea     dev_ttyS0_path
-        cop     3
+        jsr     open
         rep     #$30
         ply
         ply
 
+        ; TODO: Check for open failure
+        
         ; Print init_welcome_string to stdout
         pea     init_welcome_string
         jsr     puts

@@ -8,6 +8,7 @@
 .include "dev.inc"
 .include "w65c265s.inc"
 .include "isr.inc"
+.include "vectors.inc"
 
 .bss
 
@@ -207,9 +208,9 @@ turn_off:
 
         ; Setup interrupt vectors
         lda     #UART3_recv
-        sta     NAT_IRQAR3
+        sta     vectors + VectTab::Nat + NatVect::IRQAR3
         lda     #UART3_trans
-        sta     NAT_IRQAT3
+        sta     vectors + VectTab::Nat + NatVect::IRQAT3
 
         sep     #$20
 

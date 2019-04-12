@@ -2,4 +2,4 @@
 
 Unix-like educational kernel for WDC's w65c265s on the [Mensch Microcomputer](https://wdc65xx.com/w65c265qbx-mensch-microcomputer-educational-sbc/).
 
-Currently user-space programs are linked into the kernel binary.
+User-space binaries are linked separately, but are included as binary blobs in the kernel.
