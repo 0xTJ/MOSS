@@ -5,6 +5,7 @@
 .macpack longbranch
 
 .include "functions.inc"
+.include "vfs.inc"
 .include "filesys.inc"
 .include "dev.inc"
 .include "dirent.inc"
@@ -16,7 +17,7 @@
         type    .word
         driver  .addr
         name    .addr
-        fsnode  .tag    FSNode
+        fsnode  .tag    vnode
         next    .addr
 .endstruct
 
@@ -28,20 +29,29 @@ devices_list:
 last_dev_inode:
         .word   0
 
+; struct vnode *dev_root_dir
+dev_root_dir:
+        .addr   0
+
 .data
 
-dev_root_dir:
-        .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_DIRECTORY    ; flags
-        .word   0               ; inode
+; struct vops dev_root_dir_vops
+dev_root_dir_vops:
         .addr   0               ; read
         .addr   0               ; write
         .addr   0               ; open
         .addr   0               ; close
         .addr   fs_dev_readdir  ; readdir
         .addr   fs_dev_finddir  ; finddir
-        .word   0               ; impl
-        .addr   0               ; ptr
+
+; struct vops dev_root_dir_vops
+dev_device_vops:
+        .addr   fs_dev_read     ; read
+        .addr   fs_dev_write    ; write
+        .addr   0               ; open
+        .addr   0               ; close
+        .addr   0               ; readdir
+        .addr   0               ; finddir
 
 .code
 
@@ -84,7 +94,7 @@ done:
         rts
 .endproc
 
-; unsigned int fs_dev_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int fs_dev_read(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_read
         enter
         rep     #$30
@@ -92,7 +102,7 @@ done:
         ldx     z:arg 0 ; node
 
         ; Load struct Device * to X
-        lda     a:FSNode::impl,x
+        lda     a:vnode::impl,x
         bze     failed
         tax
 
@@ -129,7 +139,7 @@ failed:
         rts
 .endproc
 
-; unsigned int fs_dev_write(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int fs_dev_write(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_write
         enter
         rep     #$30
@@ -137,7 +147,7 @@ failed:
         ldx     z:arg 0 ; node
 
         ; Load struct Device * to X
-        lda     a:FSNode::impl,x
+        lda     a:vnode::impl,x
         bze     failed
         tax
 
@@ -174,7 +184,7 @@ failed:
         rts
 .endproc
 
-; int fs_dev_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
+; int fs_dev_readdir(struct vnode *node, unsigned int index, struct DirEnt *result)
 .proc fs_dev_readdir
         enter
         rep     #$30
@@ -231,7 +241,7 @@ failed:
         bra     done
 .endproc
 
-; int fs_dev_finddir(struct FSNode *node, char *name, struct FSNode *result)
+; int fs_dev_finddir(struct vnode *node, char *name, struct vnode **result)
 .proc fs_dev_finddir
         enter
         rep     #$30
@@ -247,11 +257,11 @@ failed:
         cmp     #0
         beq     failed
 
-        ; Get pointer to FSNode
+        ; Get pointer to vnode
         add     #Device::fsnode
 
         ; Use memmove to fill result
-        pea     .sizeof(FSNode)
+        pea     .sizeof(vnode)
         pha
         lda     z:arg 4 ; result
         pha
@@ -318,42 +328,42 @@ failed:
         ; Generate inode #
         ; TODO
 
-        ; Load FSNode
-        lda     z:arg 4 ; type
-        cmp     #DEV_TYPE_CHAR
-        beq     chardevice
+        ; Load vnode
+        ; lda     z:arg 4 ; type
+        ; cmp     #DEV_TYPE_CHAR
+        ; beq     chardevice
         bra     failed_device_type
 
-chardevice:
-        phx     ; Save X
-        lda     a:Device::name,x
-        pha     ; Push address of source string
-        txa
-        add     a:Device::fsnode + FSNode::name
-        pha     ; Push address of FSNode string
-        jsr     strcpy
-        rep     #$30
-        ply
-        ply
-        plx     ; Restore X
+; chardevice:
+        ; phx     ; Save X
+        ; lda     a:Device::name,x
+        ; pha     ; Push address of source string
+        ; txa
+        ; add     a:Device::fsnode + vnode::name
+        ; pha     ; Push address of vnode string
+        ; jsr     strcpy
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; plx     ; Restore X
 
-        lda     #FS_CHARDEVICE
-        sta     a:Device::fsnode + FSNode::flags,x
-        inc     last_dev_inode
-        lda     last_dev_inode
-        sta     a:Device::fsnode + FSNode::inode,x
-        lda     #fs_dev_read
-        sta     a:Device::fsnode + FSNode::read,x
-        lda     #fs_dev_write
-        sta     a:Device::fsnode + FSNode::write,x
-        stz     a:Device::fsnode + FSNode::open,x
-        stz     a:Device::fsnode + FSNode::close,x
-        stz     a:Device::fsnode + FSNode::readdir,x
-        stz     a:Device::fsnode + FSNode::finddir,x
-        txa
-        sta     a:Device::fsnode + FSNode::impl,x
-        stz     a:Device::fsnode + FSNode::ptr,x
-        bra     done_type_spec
+        ; lda     #FS_CHARDEVICE
+        ; sta     a:Device::fsnode + vnode::flags,x
+        ; inc     last_dev_inode
+        ; lda     last_dev_inode
+        ; sta     a:Device::fsnode + vnode::inode,x
+        ; lda     #fs_dev_read
+        ; sta     a:Device::fsnode + vnode::read,x
+        ; lda     #fs_dev_write
+        ; sta     a:Device::fsnode + vnode::write,x
+        ; stz     a:Device::fsnode + vnode::open,x
+        ; stz     a:Device::fsnode + vnode::close,x
+        ; stz     a:Device::fsnode + vnode::readdir,x
+        ; stz     a:Device::fsnode + vnode::finddir,x
+        ; txa
+        ; sta     a:Device::fsnode + vnode::impl,x
+        ; stz     a:Device::fsnode + vnode::ptr,x
+        ; bra     done_type_spec
 
 done_type_spec:
 

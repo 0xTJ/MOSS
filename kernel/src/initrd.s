@@ -23,70 +23,23 @@ ls_o65:
 
 .data
 
-initrd_root_dir:
-        .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_DIRECTORY        ; flags
-        .word   0                   ; inode
+; struct vops initrd_dir_vops
+dev_device_vops:
+        .addr   fs_dev_read         ; read
+        .addr   0                   ; write
+        .addr   0                   ; open
+        .addr   0                   ; close
+        .addr   0                   ; readdir
+        .addr   0                   ; finddir
+
+; struct vops initrd_file_vops
+dev_device_vops:
         .addr   0                   ; read
         .addr   0                   ; write
         .addr   0                   ; open
         .addr   0                   ; close
         .addr   fs_initrd_readdir   ; readdir
         .addr   fs_initrd_finddir   ; finddir
-        .word   0                   ; impl
-        .addr   0                   ; ptr
-
-initrd_dev_dir:
-        .byte   'd', 'e', 'v', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_DIRECTORY        ; flags
-        .word   1                   ; inode
-        .addr   0                   ; read
-        .addr   0                   ; write
-        .addr   0                   ; open
-        .addr   0                   ; close
-        .addr   fs_initrd_readdir   ; readdir
-        .addr   fs_initrd_finddir   ; finddir
-        .word   0                   ; impl
-        .addr   0                   ; ptr
-
-initrd_sh_file:
-        .byte   's', 'h', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_FILE             ; flags
-        .word   2                   ; inode
-        .addr   fs_initrd_read      ; read
-        .addr   0                   ; write
-        .addr   0                   ; open
-        .addr   0                   ; close
-        .addr   0                   ; readdir
-        .addr   0                   ; finddir
-        .word   sh_o65              ; impl
-        .addr   0                   ; ptr
-
-initrd_init_file:
-        .byte   'i', 'n', 'i', 't', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_FILE             ; flags
-        .word   3                   ; inode
-        .addr   fs_initrd_read      ; read
-        .addr   0                   ; write
-        .addr   0                   ; open
-        .addr   0                   ; close
-        .addr   0                   ; readdir
-        .addr   0                   ; finddir
-        .word   init_o65            ; impl
-        .addr   0                   ; ptr
-
-initrd_ls_file:
-        .byte   'l', 's', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_FILE             ; flags
-        .word   4                   ; inode
-        .addr   fs_initrd_read      ; read
-        .addr   0                   ; write
-        .addr   0                   ; open
-        .addr   0                   ; close
-        .addr   0                   ; readdir
-        .addr   0                   ; finddir
-        .word   ls_o65              ; impl
-        .addr   0                   ; ptr
 
 .code
 

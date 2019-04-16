@@ -1,50 +1,20 @@
-FS_FILE         = $01
-FS_DIRECTORY    = $02
-FS_CHARDEVICE   = $03
-FS_BLOCKDEVICE  = $04
-FS_PIPE         = $05
-FS_SYMLINK      = $06
-FS_MOUNTPOINT   = $08
-FS_TYPE_BITS    = $0F
-
-.struct FSNode
-        name    .byte   16
-        flags   .word
-        inode   .word
-        read    .addr
-        write   .addr
-        open    .addr
-        close   .addr
-        readdir .addr
-        finddir .addr
-        impl    .word
-        ptr     .addr
-.endstruct
-
-; .struct DirEnt
-        ; name    .byte   16
-        ; inode   .word
-; .endstruct
-
-.global root_dir
-
-; struct FSNode *follow_mounts(struct FSNode *node)
+; struct VNode *follow_mounts(struct VNode *node)
 .global follow_mounts
-; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
+; int traverse_rel_path(struct VNode *node, char *path, struct VNode *result)
 .global traverse_rel_path
-; int traverse_abs_path(char *path, struct FSNode *result)
+; int traverse_abs_path(char *path, struct VNode *result)
 .global traverse_abs_path
-; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
+; void mount_fs(struct VNode *mount_point, struct VNode *mounted)
 .global mount_fs
-; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int read_fs(struct VNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .global read_fs
-; unsigned int write_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int write_fs(struct VNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .global write_fs
-; int open_fs(struct FSNode *node, uint8_t read, uint8_t write)
+; int open_fs(struct VNode *node, uint8_t read, uint8_t write)
 .global open_fs
-; void close_fs(struct FSNode *node)
+; void close_fs(struct VNode *node)
 .global close_fs
-; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
+; int readdir_fs(struct VNode *node, unsigned int index, struct DirEnt *result)
 .global readdir_fs
-; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
+; int finddir_fs(struct VNode *node, char *name, struct VNode **result)
 .global finddir_fs
