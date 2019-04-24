@@ -17,12 +17,13 @@
         type    .word
         driver  .addr
         name    .addr
-        fsnode  .tag    vnode
+        vnode   .addr
         next    .addr
 .endstruct
 
 .bss
 
+.global devices_list
 devices_list:
         .addr   0
 
@@ -30,6 +31,7 @@ last_dev_inode:
         .word   0
 
 ; struct vnode *dev_root_dir
+.global dev_root_dir
 dev_root_dir:
         .addr   0
 
@@ -97,26 +99,23 @@ done:
 ; unsigned int fs_dev_read(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_read
         enter
-        rep     #$30
-
-        ldx     z:arg 0 ; node
 
         ; Load struct Device * to X
+        ldx     z:arg 0 ; node
         lda     a:vnode::impl,x
-        bze     failed
         tax
 
-        ldy     z:arg 2 ; offset
-        phy
-        ldy     z:arg 4 ; size
-        phy
-        ldy     z:arg 6 ; buffer
-        phy
+        ; If impl is NULL, not a device, fail
+        bze     failed
 
+        ; Load device type to A
         lda     a:Device::type,x
 
+        ; Is it a character device?
         cmp     #DEV_TYPE_CHAR
         beq     chardevice
+
+        ; Device type not recognized, fail
         bra     failed
 
 chardevice:
@@ -124,7 +123,13 @@ chardevice:
         lda     a:Device::driver,x
         tax
 
-        ; Push char driver pointer and call read
+        ; Call read with arguments
+        lda     z:arg 2 ; offset
+        pha
+        lda     z:arg 4 ; size
+        pha
+        lda     z:arg 6 ; buffer
+        pha
         phx
         jsr     (CharDriver::read,x)
         rep     #$30
@@ -133,30 +138,27 @@ chardevice:
         ply
         ply
 
-failed:
+        ; Done read operation, return with value from device read
+        bra     done
 
+done:
         leave
         rts
+
+failed:
+        lda     #0
+        bra     done
 .endproc
 
 ; unsigned int fs_dev_write(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_write
         enter
-        rep     #$30
-
-        ldx     z:arg 0 ; node
 
         ; Load struct Device * to X
+        ldx     z:arg 0 ; node
         lda     a:vnode::impl,x
         bze     failed
         tax
-
-        ldy     z:arg 2 ; offset
-        phy
-        ldy     z:arg 4 ; size
-        phy
-        ldy     z:arg 6 ; buffer
-        phy
 
         lda     a:Device::type,x
 
@@ -169,7 +171,13 @@ chardevice:
         lda     a:Device::driver,x
         tax
 
-        ; Push char driver pointer and call write
+        ; Call write with arguments
+        ldy     z:arg 2 ; offset
+        phy
+        ldy     z:arg 4 ; size
+        phy
+        ldy     z:arg 6 ; buffer
+        phy
         phx
         jsr     (CharDriver::write,x)
         rep     #$30
@@ -187,7 +195,6 @@ failed:
 ; int fs_dev_readdir(struct vnode *node, unsigned int index, struct DirEnt *result)
 .proc fs_dev_readdir
         enter
-        rep     #$30
 
         ; Load device list first item
         ldx     devices_list
@@ -230,6 +237,7 @@ done_loop:
         inc
         sta     a:DirEnt::inode,x
 
+		; Return 0
         lda     #0
 
 done:
@@ -244,7 +252,6 @@ failed:
 ; int fs_dev_finddir(struct vnode *node, char *name, struct vnode **result)
 .proc fs_dev_finddir
         enter
-        rep     #$30
 
         ; Get device pointer from name
         lda     z:arg 2 ; name
@@ -253,24 +260,25 @@ failed:
         rep     #$30
         ply
 
-        ; If it failed, return error
-        cmp     #0
+        ; If it returned NULL, return error
+		tax
         beq     failed
 
-        ; Get pointer to vnode
-        add     #Device::fsnode
+        ; Get pointer to vnode in A
+        lda     a:Device::vnode,x
 
-        ; Use memmove to fill result
-        pea     .sizeof(vnode)
+        ; Reference this vnode
         pha
-        lda     z:arg 4 ; result
         pha
-        jsr     memmove
+        jsr     vref
         rep     #$30
         ply
-        ply
-        ply
+        pla
 
+        ; Store vnode to result
+        sta     (arg 4)
+
+		; Return 0
         lda     #0
 
 done:
@@ -285,30 +293,50 @@ failed:
 ; void dev_init(void)
 .constructor dev_init
 .proc dev_init
+        enter
         rep     #$30
 
-        pea     dev_root_dir
-        pea     initrd_dev_dir
+		jsr		vfs_init
+
+		; Get new vnode for root of dev
+		pea		dev_root_dir
+		pea		dev_root_dir_vops
+		pea		VTYPE_DIRECTORY
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
+
+		; TODO: Check for success
+
+        lda     dev_root_dir
+        pha
+        ; lda     initrd_dev_dir
+        lda     root_vnode
+        pha
         jsr     mount_fs
         rep     #$30
         ply
         ply
 
+        leave
         rts
 .endproc
 
-; void register_driver(struct CharDriver *driver, const char *name, int type)
-.proc register_driver
+; void register_char_driver(struct CharDriver *driver, const char *name)
+.proc register_char_driver
         enter
-        rep     #$30
 
-        ; Allocate driver struct and put address in X
+        ; Allocate driver struct and put pointer into X
         pea     .sizeof(Device)
         jsr     malloc
         rep     #$30
         ply
-        jeq     failed_driver_alloc
         tax
+
+		; If alloc failed, exit
+        jeq     failed
 
         ; Store driver to struct
         lda     z:arg 0 ; driver
@@ -319,58 +347,41 @@ failed:
         sta     a:Device::name,x
 
         ; Store type to struct
-        lda     z:arg 4 ; type
+        lda     #DEV_TYPE_CHAR
         sta     a:Device::type,x
 
         ; Reset next device
         stz     a:Device::next,x
 
-        ; Generate inode #
-        ; TODO
+		; Push new device for later
+		phx
 
-        ; Load vnode
-        ; lda     z:arg 4 ; type
-        ; cmp     #DEV_TYPE_CHAR
-        ; beq     chardevice
-        bra     failed_device_type
+		; Get new vnode
+		txa
+		add		#Device::vnode
+		pha		; Result location
+		pea		dev_device_vops
+		pea		VTYPE_CHARDEVICE
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
 
-; chardevice:
-        ; phx     ; Save X
-        ; lda     a:Device::name,x
-        ; pha     ; Push address of source string
-        ; txa
-        ; add     a:Device::fsnode + vnode::name
-        ; pha     ; Push address of vnode string
-        ; jsr     strcpy
-        ; rep     #$30
-        ; ply
-        ; ply
-        ; plx     ; Restore X
+		; Pull new device to A
+		pla
 
-        ; lda     #FS_CHARDEVICE
-        ; sta     a:Device::fsnode + vnode::flags,x
-        ; inc     last_dev_inode
-        ; lda     last_dev_inode
-        ; sta     a:Device::fsnode + vnode::inode,x
-        ; lda     #fs_dev_read
-        ; sta     a:Device::fsnode + vnode::read,x
-        ; lda     #fs_dev_write
-        ; sta     a:Device::fsnode + vnode::write,x
-        ; stz     a:Device::fsnode + vnode::open,x
-        ; stz     a:Device::fsnode + vnode::close,x
-        ; stz     a:Device::fsnode + vnode::readdir,x
-        ; stz     a:Device::fsnode + vnode::finddir,x
-        ; txa
-        ; sta     a:Device::fsnode + vnode::impl,x
-        ; stz     a:Device::fsnode + vnode::ptr,x
-        ; bra     done_type_spec
+        ; Load new vnode to X
+        tax
+        ldy     a:Device::vnode,x
+        tyx
 
-done_type_spec:
+		; Store device pointer as impl in vnode
+        sta     a:vnode::impl,x
 
         ; Add to list
-        txa                     ; Move struct address to A
-        ldy     devices_list    ; Will jump if the list pointer is not NULL
-        bnz     find_loop
+        ldy     devices_list
+        bnz     find_loop		; Will branch if the list pointer is not NULL
         sta     devices_list    ; Store directly to the list pointer if this is the first being added
         bra     done
 find_loop:
@@ -379,17 +390,10 @@ find_loop:
         bnz     find_loop
         sta     a:Device::next,x
 
-        bra     done
-
-failed_device_type:
-        phx
-        jsr     free
-        rep     #$30
-        ply
-
-failed_driver_alloc:
-
 done:
         leave
         rts
+
+failed:
+		bra		done
 .endproc

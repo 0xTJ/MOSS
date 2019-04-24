@@ -103,21 +103,24 @@ failed:
 
 ; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
-        enter
+        enter 	2
+		
+		; 0: struct vnode *found_node
 
         ; Traverse path
+		tdc
+		add		#var 0	; &found_node
+        pha
         lda     z:arg 0 ; path
         pha
         jsr     traverse_abs_path
         rep     #$30
         ply
+        ply
 
         ; If failed, fail
         cmp     #$FFFF
         beq     failed
-
-        ; Push found vnode
-        pha
 
         ; Load pointer to file table to X
         lda     current_process_p
@@ -138,7 +141,7 @@ table_loop:
 table_done:
 
         ; Store into table
-        pla     ; found vnode
+        lda		z:var 0 ; found_node
         sta     a:0,x
 
         ; Push file #
