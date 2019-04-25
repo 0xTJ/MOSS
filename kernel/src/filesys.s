@@ -6,51 +6,40 @@
 
 .include "filesys.inc"
 .include "functions.inc"
+.include "vfs.inc"
 .include "stdio.inc"
 .include "stdlib.inc"
 .include "string.inc"
 
-.pushseg
-.bss
-tmp:
-.res 64
-.popseg
-
-.data
-
-root_dir:
-        .byte   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ; name
-        .word   FS_DIRECTORY    ; flags
-        .word   0               ; inode
-        .addr   0               ; read
-        .addr   0               ; write
-        .addr   0               ; open
-        .addr   0               ; close
-        .addr   0               ; readdir
-        .addr   0               ; finddir
-        .word   0               ; impl
-        .addr   0               ; ptr
-
 .code
 
-; struct FSNode *follow_mounts(struct FSNode *node)
+; struct vnode *follow_mounts(struct vnode *node)
+; Input node must be referenced before input, and must not be used afterwards, it is released.
 .proc follow_mounts
         enter
 
-        rep     #$30
-
-        lda     z:arg 0
-        tax
+        ldx     z:arg 0
 
         bra     skip_first
 
 loop:
-        ldy     a:FSNode::ptr,x
-        tyx
+        ldy     a:vnode::ptr,x
+
+        ; Reference the new one, release the old one, and load the new one to X
+        phy
+        phx
+        phy
+        jsr     vref
+        rep     #$30
+        ply
+        jsr     vrele
+        rep     #$30
+        ply
+        plx
+
 skip_first:
-        lda     a:FSNode::flags,x
-        and     #FS_TYPE_BITS
-        cmp     #FS_DIRECTORY | FS_MOUNTPOINT
+        lda     a:vnode::type,x
+        cmp     #VTYPE_DIRECTORY | VTYPE_MOUNTPOINT
         beq     loop
 
         txa
@@ -82,12 +71,14 @@ done_loop:
         rts
 .endproc
 
-; int traverse_rel_path(struct FSNode *node, char *path, struct FSNode *result)
+; int traverse_rel_path(struct vnode *node, char *path, struct vnode **result)
 ; Both nodes can be the same, node is read before result is overwritten
 .proc traverse_rel_path
-        enter
-        rep     #$30
+        enter   2
+        
+        ; 0: struct vnode *new_vnode_p
 
+start:
         ; User follow_mounts to update node in arguments
         lda     z:arg 0 ; node
         pha
@@ -113,8 +104,8 @@ done_loop:
 
         ; Check that node is a directory
         ldx     z:arg 0 ; node
-        lda     a:FSNode::flags,x
-        cmp     #FS_DIRECTORY
+        lda     a:vnode::type,x
+        cmp     #VTYPE_DIRECTORY
         jne     failed
 
         ; Make space for string on stack
@@ -170,23 +161,17 @@ done_path_segment:
 
         ; Pull beginning of string on stack to X
         plx
-
-        ; Make stack space for FSNode and put pointer to it in A
-        tsc
-        sub     #.sizeof(FSNode)
-        tcs
-        inc
-
-        ; Push location of result FSNode as result for recursive call
-        lda     z:arg 4
-        pha
+        
+        ; Push result pointer
 
         ; Push pointer in path to stack as path for recursive call
         phy
 
-        ; Push location of result FSNode twice
-        ; Once as base for recursive call
-        ; Once for call to finddir_fs
+        ; Push location of new_vnode_p twice
+        ; Once for finddir_fs
+        ; Once for recursive call
+        tdc
+        add     #var 0
         pha
         pha
 
@@ -207,10 +192,8 @@ done_path_segment:
         cmp     #$FFFF
         beq     failed
 
-        ; Location of 0 or '/' in path argument is currently on stack
-
-        ; Call self recursively
-        jsr     traverse_rel_path
+        ; Loop
+        jmp     start
 
         ; Return with result from recursive call
 done:
@@ -220,17 +203,9 @@ done:
 empty_path:
         rep     #$30
 
-        ; Move node to result
-        pea     .sizeof(FSNode)
+        ; Move address of node to result
         lda     z:arg 0 ; node
-        pha
-        lda     z:arg 4 ; result
-        pha
-        jsr     memmove
-        rep     #$30
-        ply
-        ply
-        ply
+        sta     (arg 4) ; result
 
         ; Return 0 on success
         lda     #0
@@ -243,8 +218,7 @@ failed:
         bra     done
 .endproc
 
-; int traverse_abs_path(char *path, struct FSNode *result)
-.export traverse_abs_path
+; int traverse_abs_path(char *path, struct vnode *result)
 .proc traverse_abs_path
         enter
         rep     #$30
@@ -266,8 +240,8 @@ failed:
         ; Push path string
         phx
 
-        ; Push root_dir
-        pea     root_dir
+        ; Push root_vnode
+        pea     root_vnode
 
         jsr     traverse_rel_path
         rep     #$30
@@ -285,7 +259,7 @@ failed:
         bra     done
 .endproc
 
-; void mount_fs(struct FSNode *mount_point, struct FSNode *mounted)
+; void mount_fs(struct vnode *mount_point, struct vnode *mounted)
 .proc mount_fs
         enter
         rep     #$30
@@ -294,9 +268,8 @@ failed:
         ldx     z:arg 2
 
         ; Check that the mounted is a directory, and not already mounted on
-        lda     a:FSNode::flags,x
-        and     #FS_TYPE_BITS
-        cmp     #FS_DIRECTORY
+        lda     a:vnode::type,x
+        cmp     #VTYPE_DIRECTORY
         bne     invalid_type
 
         ; Move mounted to Y
@@ -308,28 +281,29 @@ failed:
 
         ; Store mounted into mount point's ptr
         tya
-        sta     a:FSNode::ptr,x
+        sta     a:vnode::ptr,x
 
-        ; Add mount point flag to flags
-        lda     a:FSNode::flags,x
-        ora     #FS_MOUNTPOINT
-        sta     a:FSNode::flags,x
+        ; Add mount point flag to type
+        lda     a:vnode::type,x
+        ora     #VTYPE_MOUNTPOINT
+        sta     a:vnode::type,x
 
 invalid_type:
         leave
         rts
 .endproc
 
-; unsigned int read_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int read_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc read_fs
         enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:arg 0
+        ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
-        lda     a:FSNode::read,x
+        ldx     a:vnode::vops,y
+        lda     a:vops::read,x
         bze     done
 
         ; Copy parameters onto current stack
@@ -343,7 +317,7 @@ invalid_type:
         pha
 
         ; Jump to file-system-specific read function
-        jsr     (FSNode::read,x)
+        jsr     (vops::read,x)
 
         ; Remove parameters from stack
         rep     #$30
@@ -357,16 +331,17 @@ done:
         rts
 .endproc
 
-; unsigned int write_fs(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int write_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc write_fs
         enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:arg 0
+        ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
-        lda     a:FSNode::write,x
+        ldx     a:vnode::vops,y
+        lda     a:vops::write,x
         bze     done
 
         ; Copy parameters onto current stack
@@ -380,7 +355,7 @@ done:
         pha
 
         ; Jump to file-system-specific write function
-        jsr     (FSNode::write,x)
+        jsr     (vops::write,x)
 
         ; Remove parameters from stack
         rep     #$30
@@ -394,16 +369,17 @@ done:
         rts
 .endproc
 
-; void open_fs(struct FSNode *node, uint8_t read, uint8_t write)
+; void open_fs(struct vnode *node, uint8_t read, uint8_t write)
 .proc open_fs
         enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:arg 0
+        ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit
-        lda     a:FSNode::open,x
+        ldx     a:vnode::vops,y
+        lda     a:vops::open,x
         bze     done
 
         ; Copy parameters onto current stack
@@ -417,7 +393,7 @@ done:
         pha
 
         ; Jump to file-system-specific open function
-        jsr     (FSNode::open,x)
+        jsr     (vops::open,x)
 
         ; Remove parameters from stack
         rep     #$30
@@ -435,16 +411,17 @@ done:
         rts
 .endproc
 
-; void close_fs(struct FSNode *node)
+; void close_fs(struct vnode *node)
 .proc close_fs
         enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:arg 0
+        ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit
-        lda     a:FSNode::close,x
+        ldx     a:vnode::vops,y
+        lda     a:vops::close,x
         bze     done
 
         ; Copy parameters onto current stack
@@ -452,7 +429,7 @@ done:
         pha
 
         ; Jump to file-system-specific close function
-        jsr     (FSNode::close,x)
+        jsr     (vops::close,x)
 
         ; Remove parameters from stack
         rep     #$30
@@ -463,16 +440,17 @@ done:
         rts
 .endproc
 
-; int readdir_fs(struct FSNode *node, unsigned int index, struct DirEnt *result)
+; int readdir_fs(struct vnode *node, unsigned int index, struct DirEnt *result)
 .proc readdir_fs
         enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:arg 0
+        ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
-        lda     a:FSNode::readdir,x
+        ldx     a:vnode::vops,y
+        lda     a:vops::readdir,x
         bze     not_found
 
         ; Copy parameters onto current stack
@@ -484,7 +462,7 @@ done:
         pha
 
         ; Jump to file-system-specific readdir function
-        jsr     (FSNode::readdir,x)
+        jsr     (vops::readdir,x)
 
         ; Remove parameters from stack
         rep     #$30
@@ -501,16 +479,17 @@ not_found:
         bra     done
 .endproc
 
-; int finddir_fs(struct FSNode *node, char *name, struct FSNode *result)
+; int finddir_fs(struct vnode *node, char *name, struct vnode **result)
 .proc finddir_fs
         enter
         rep     #$30
 
         ; Load node to x
-        ldx     z:arg 0
+        ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
-        lda     a:FSNode::finddir,x
+        ldx     a:vnode::vops,y
+        lda     a:vops::finddir,x
         bze     not_found
 
         ; Copy parameters onto current stack
@@ -522,7 +501,7 @@ not_found:
         pha
 
         ; Jump to file-system-specific finddir function
-        jsr     (FSNode::finddir,x)
+        jsr     (vops::finddir,x)
 
         ; Remove parameters from stack
         rep     #$30

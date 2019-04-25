@@ -5,6 +5,7 @@
 
 .include "proc.inc"
 .include "functions.inc"
+.include "vfs.inc"
 .include "stdlib.inc"
 .include "stdio.inc"
 .include "fcntl.inc"
@@ -17,8 +18,8 @@
 ; ssize_t read(int fd, void *buf, size_t nbyte)
 .proc read
         enter
-        rep     #$30
 
+        ; Fail if fd isn't in bounds
         lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
@@ -31,7 +32,7 @@
         add     #Process::files_p
         tax
 
-        ; Load address of FSNode to A
+        ; Load address of vnode to A
         lda     a:0,x
         bze     failed
 
@@ -60,8 +61,8 @@ failed:
 ; ssize_t write(int fd, const void *buf, size_t nbyte)
 .proc write
         enter
-        rep     #$30
 
+        ; Fail if fd isn't in bounds
         lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
@@ -74,7 +75,7 @@ failed:
         add     #Process::files_p
         tax
 
-        ; Load address of FSNode to A
+        ; Load address of vnode to A
         lda     a:0,x
         bze     failed
 
@@ -103,36 +104,20 @@ failed:
 ; int open(const char *pathname, int flags, ... /* mode_t mode */)
 .proc open
         enter
-        rep     #$30
 
-        ; Allocate result FSNode
-        pea     .sizeof(FSNode)
-        jsr     malloc
-        rep     #$30
-        ply
-
-        cmp     #0
-        beq     failed_malloc
-
-        ; Push pointer to result FSNode for later
-        pha
-
-        ; Push pointer to result FSNode for path traversal
-        pha
-
-        ; Push path
+        ; Traverse path
         lda     z:arg 0 ; path
         pha
-
         jsr     traverse_abs_path
         rep     #$30
         ply
-        ply
 
+        ; If failed, fail
         cmp     #$FFFF
-        beq     failed_traverse_path
+        beq     failed
 
-        ; Result FSNode pointer already on stack
+        ; Push found vnode
+        pha
 
         ; Load pointer to file table to X
         lda     current_process_p
@@ -153,7 +138,7 @@ table_loop:
 table_done:
 
         ; Store into table
-        pla     ; found FSNode
+        pla     ; found vnode
         sta     a:0,x
 
         ; Push file #
@@ -167,22 +152,22 @@ table_done:
         ply
         ply
 
-        ; Pull file #
+        ; Return file #
         pla
-
-done:
         leave
         rts
 
-failed_traverse_path:
 failed_out_of_fd:
-        ; Allocated FSNode pointer already on stack
-        jsr     free
+        ; Allocated vnode pointer already on stack
+        jsr     vrele
         rep     #$30
+        ply
 
-failed_malloc:
-        lda     #$FFFF  ; -1
-        bra     done
+failed:
+        ; Return -1
+        lda     #$FFFF
+        leave
+        rts
 .endproc
 
 ; int close(int fd)
@@ -190,6 +175,7 @@ failed_malloc:
         enter
         rep     #$30
 
+        ; Fail if fd isn't in bounds
         lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
@@ -202,10 +188,10 @@ failed_malloc:
         add     #Process::files_p
         tax
 
-        ; Push pointer to pointer to FSNode to stack for later
+        ; Push pointer to pointer to vnode to stack for later
         phx
 
-        ; Load address of FSNode to A
+        ; Load address of vnode to A
         lda     a:0,x
         bze     failed
 
@@ -215,22 +201,22 @@ failed_malloc:
         rep     #$30
         ply
 
-        ; Pull pointer to pointer to FSNode from stack and push it back
+        ; Pull pointer to pointer to vnode from stack and push it back
         plx
         phx
 
-        ; Load address of FSNode to A
+        ; Load address of vnode to A
         lda     a:0,x
 
-        ; Free the pointer to FSNode
+        ; Free the pointer to vnode
         pha
         jsr     free
         rep     #$30
         ply
 
-        ; Pull pointer to pointer to FSNode from stack
+        ; Pull pointer to pointer to vnode from stack
         plx
-        
+
         ; Clear file descriptor
         stz     a:0,x
 
@@ -248,6 +234,7 @@ failed:
         enter
         rep     #$30
 
+        ; Fail if fd isn't in bounds
         lda     z:arg 0 ; fd
         cmp     #0
         blt     failed
@@ -259,8 +246,8 @@ failed:
         add     current_process_p
         add     #Process::files_p
         tax
-        
-        ; Load address of FSNode to A
+
+        ; Load address of vnode to A
         lda     a:0,x
         bze     failed
 

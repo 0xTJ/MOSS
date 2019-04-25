@@ -85,10 +85,10 @@ root_path:
         cmp     #0
         bne     loop
         
-        pea     root_path
-        jsr     chdir
-        rep     #$30
-        ply
+        ; pea     root_path
+        ; jsr     chdir
+        ; rep     #$30
+        ; ply
 
         pea     init_path
         cop     $0C
