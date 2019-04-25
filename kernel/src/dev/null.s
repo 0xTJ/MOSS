@@ -30,7 +30,7 @@ null_name:
         pea     DEV_TYPE_CHAR
         pea     null_name
         pea     null_driver
-        jsr     register_driver
+        jsr     register_char_driver
         rep     #$30
         ply
         ply

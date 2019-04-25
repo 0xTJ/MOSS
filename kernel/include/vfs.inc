@@ -32,6 +32,8 @@ VTYPE_MOUNTPOINT   = $08
 ; struct vnode root_vnode
 .global root_vnode
 
+; void vfs_init(void)
+.global vfs_init
 ; int newvnode(enum vtype type, struct vops *vops, struct vnode **new_vnode)
 .global newvnode
 ; void vref(struct vnode *vp)

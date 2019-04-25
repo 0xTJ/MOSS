@@ -8,12 +8,36 @@
 .include "functions.inc"
 .include "stdlib.inc"
 
+.data
+
+; struct vops root_vops
+root_vops:
+        .addr   0     			; read
+        .addr   0    			; write
+        .addr   0               ; open
+        .addr   0               ; close
+        .addr   0               ; readdir
+        .addr   0               ; finddir
+
 .bss
 
 root_vnode:
         .addr   0
 
 .code
+
+; void vfs_init(void)
+.proc vfs_init
+		enter
+
+		pea		root_vnode
+		pea		root_vops
+		pea		VTYPE_DIRECTORY
+		jsr		newvnode
+
+		leave
+		rts
+.endproc
 
 ; int newvnode(enum vtype type, struct vops *vops, struct vnode **new_vnode)
 .proc newvnode
@@ -48,7 +72,8 @@ root_vnode:
 
         ; Store vnode pointer to return pointer
         txa
-        sta     (arg 4) ; *new_vnode
+        ldx     z:arg 4 ; new_vnode
+        sta     a:0,x   ; *new_vnode
 
         ; Return 0
         lda     #0

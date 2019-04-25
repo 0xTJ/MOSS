@@ -242,11 +242,13 @@ emul_mode:  ; Syscalls in emulation mode not supported
 .endproc
 
 .proc sc_execve
-        jmp     execve
+.global execve_no_direct_call
+        jmp     execve_no_direct_call
 .endproc
 
 .proc sc_vfork
-        jmp     vfork
+.global vfork_no_direct_call
+        jmp     vfork_no_direct_call
 .endproc
 
 .proc sc_waitpid

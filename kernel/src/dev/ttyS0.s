@@ -12,6 +12,7 @@
 
 .bss
 
+.global ttyS0_driver
 ttyS0_driver:
         .tag    CharDriver
 
@@ -244,7 +245,7 @@ turn_off:
         pea     DEV_TYPE_CHAR
         pea     ttyS0_name
         pea     ttyS0_driver
-        jsr     register_driver
+        jsr     register_char_driver
         rep     #$30
         ply
         ply

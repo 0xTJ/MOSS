@@ -27,22 +27,26 @@ loop:
 
         ; Reference the new one, release the old one, and load the new one to X
         phy
-        phx
-        phy
-        jsr     vref
-        rep     #$30
-        ply
-        jsr     vrele
-        rep     #$30
-        ply
+        ; phx
+        ; phy
+        ; jsr     vref
+        ; rep     #$30
+        ; ply
+        ; jsr     vrele
+        ; rep     #$30
+        ; ply
         plx
 
 skip_first:
         lda     a:vnode::type,x
-        cmp     #VTYPE_DIRECTORY | VTYPE_MOUNTPOINT
-        beq     loop
 
+        ; Loop if the mountpoint bit is set
+        bit     #VTYPE_MOUNTPOINT
+        bne     loop
+
+        ; Return final node
         txa
+
         leave
         rts
 .endproc
@@ -50,7 +54,6 @@ skip_first:
 ; char *follow_mounts(const char *path)
 .proc skip_slashes
         enter
-        rep     #$30
 
         ldx     z:arg 0 ; path
 
@@ -74,12 +77,10 @@ done_loop:
 ; int traverse_rel_path(struct vnode *node, char *path, struct vnode **result)
 ; Both nodes can be the same, node is read before result is overwritten
 .proc traverse_rel_path
-        enter   2
-        
-        ; 0: struct vnode *new_vnode_p
+        enter
 
 start:
-        ; User follow_mounts to update node in arguments
+        ; Use follow_mounts to update node in arguments
         lda     z:arg 0 ; node
         pha
         jsr     follow_mounts
@@ -93,10 +94,10 @@ start:
         jsr     skip_slashes
         rep     #$30
         ply
-        sta     z:arg 2
+        sta     z:arg 2 ; path
 
         ; Check for path being empty and jump to empty_path if it is.
-        ldx     z:arg 2 ; node
+        ldx     z:arg 2 ; path
         sep     #$20
         lda     a:0,x
         jeq     empty_path
@@ -119,12 +120,12 @@ start:
         pha
 
         ; Load path to X
-        ldx     z:arg 2
+        ldx     z:arg 2 ; path
 
         sep     #$20
 
 path_segment_loop:
-        ; Load first character of relative path to A
+        ; Load character of relative path to A
         lda     a:0,x
 
         ; If it is 0 or '/', done segment
@@ -151,35 +152,28 @@ path_segment_loop:
         bra     path_segment_loop
 
 done_path_segment:
+        ; Store location in input path to path
+        stx        z:arg 2    ; path
+
         ; Store null-terminator in string on stack
-        txy     ; Store location in path argument in Y
         plx     ; Load string on stack from stack to X
-        stz     a:0,x   ; Store 0 to string on stack
-        ; Intentionally don't push back the location in string on stack
+        stz     a:0,x
 
         rep     #$30
 
         ; Pull beginning of string on stack to X
         plx
-        
-        ; Push result pointer
 
-        ; Push pointer in path to stack as path for recursive call
-        phy
-
-        ; Push location of new_vnode_p twice
-        ; Once for finddir_fs
-        ; Once for recursive call
+        ; Push location of node for finddir_fs
         tdc
-        add     #var 0
-        pha
+        add     #arg 0    ; &node
         pha
 
         ; Push beginning of string on stack from X
         phx
 
         ; Push starting node
-        lda     z:arg 0
+        lda     z:arg 0    ; node
         pha
 
         ; Call finddir_fs and pull arguments
@@ -205,7 +199,7 @@ empty_path:
 
         ; Move address of node to result
         lda     z:arg 0 ; node
-        sta     (arg 4) ; result
+        sta     (arg 4) ; *result
 
         ; Return 0 on success
         lda     #0
@@ -218,12 +212,11 @@ failed:
         bra     done
 .endproc
 
-; int traverse_abs_path(char *path, struct vnode *result)
+; int traverse_abs_path(char *path, struct vnode **result)
 .proc traverse_abs_path
         enter
-        rep     #$30
 
-        ; Push result node
+        ; Push result pointer
         lda     z:arg 2
         pha
 
@@ -241,7 +234,8 @@ failed:
         phx
 
         ; Push root_vnode
-        pea     root_vnode
+        lda     root_vnode
+        pha
 
         jsr     traverse_rel_path
         rep     #$30
@@ -254,7 +248,7 @@ done:
         rts
 
 failed:
-        rep     #$20
+        rep     #$30
         lda     #$FFFF
         bra     done
 .endproc
@@ -262,7 +256,6 @@ failed:
 ; void mount_fs(struct vnode *mount_point, struct vnode *mounted)
 .proc mount_fs
         enter
-        rep     #$30
 
         ; Load mounted into X
         ldx     z:arg 2
@@ -272,15 +265,13 @@ failed:
         cmp     #VTYPE_DIRECTORY
         bne     invalid_type
 
-        ; Move mounted to Y
-        txy
+        ; Move mounted to A
+        txa
 
         ; Load mount_point into X
-        rep     #$30
         ldx     z:arg 0
 
         ; Store mounted into mount point's ptr
-        tya
         sta     a:vnode::ptr,x
 
         ; Add mount point flag to type
@@ -479,16 +470,57 @@ not_found:
         bra     done
 .endproc
 
+.bss
+
+tmp:
+        .res    64
+
+.code
+
 ; int finddir_fs(struct vnode *node, char *name, struct vnode **result)
 .proc finddir_fs
         enter
-        rep     #$30
+        
+        ; ldy     z:arg 0
+        ; ldx     a:vnode::vops,y
+        ; lda     a:vops::finddir,x
+
+        ; pea     16
+        ; pea     tmp
+        ; lda     z:arg 0
+        ; pha
+        ; jsr     itoa
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
+
+        ; pea     tmp
+        ; lda     z:arg 2
+        ; pha
+; .import strlen
+        ; jsr     strlen
+        ; rep     #$30
+        ; ply
+
+        ; pha
+        ; pea     tmp
+        ; lda     z:arg 2
+        ; pha
+        ; pea     0
+; .import dev_ttyS0_write
+        ; jsr     dev_ttyS0_write
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
 
         ; Load node to x
         ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         ldx     a:vnode::vops,y
+        bze     not_found
         lda     a:vops::finddir,x
         bze     not_found
 

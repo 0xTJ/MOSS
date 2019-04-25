@@ -119,4 +119,6 @@
         .local loop_waiting
 loop_waiting:
         bra     loop_waiting
+
+        rep     #$30
 .endmacro

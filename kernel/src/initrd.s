@@ -7,10 +7,30 @@
 .include "initrd.inc"
 .include "functions.inc"
 .include "dirent.inc"
+.include "vfs.inc"
 .include "filesys.inc"
 .include "stdio.inc"
 .include "stdlib.inc"
 .include "string.inc"
+
+.struct initrd_entry
+        name    .addr
+        data    .addr
+        next    .addr
+.endstruct
+
+.bss
+
+initrd_root_dir:
+        .addr   0
+initrd_dev_dir:
+        .addr   0
+initrd_init_file:
+        .addr   0
+initrd_sh_file:
+        .addr   0
+initrd_ls_file:
+        .addr   0
 
 .rodata
 
@@ -21,11 +41,52 @@ sh_o65:
 ls_o65:
         .incbin "../../ls/ls.o65"
 
+root_name:
+        .asciiz ""
+dev_name:
+        .asciiz "dev"
+init_name:
+        .asciiz "init"
+sh_name:
+        .asciiz "sh"
+ls_name:
+        .asciiz "ls"
+
+root_data:
+        .addr   root_name
+        .addr   0
+        .addr   dev_data
+dev_data:
+        .addr   dev_name
+        .addr   0
+        .addr   init_data
+init_data:
+        .addr   init_name
+        .addr   init_o65
+        .addr   sh_data
+sh_data:
+        .addr   sh_name
+        .addr   sh_o65
+        .addr   ls_data
+ls_data:
+        .addr   ls_name
+        .addr   ls_o65
+        .addr   0
+
 .data
 
 ; struct vops initrd_dir_vops
-dev_device_vops:
-        .addr   fs_dev_read         ; read
+initrd_dir_vops:
+        .addr   0                   ; read
+        .addr   0                   ; write
+        .addr   0                   ; open
+        .addr   0                   ; close
+        .addr   fs_initrd_readdir   ; readdir
+        .addr   fs_initrd_finddir   ; finddir
+
+; struct vops initrd_dev_vops
+initrd_dev_vops:
+        .addr   0                   ; read
         .addr   0                   ; write
         .addr   0                   ; open
         .addr   0                   ; close
@@ -33,13 +94,13 @@ dev_device_vops:
         .addr   0                   ; finddir
 
 ; struct vops initrd_file_vops
-dev_device_vops:
-        .addr   0                   ; read
+initrd_file_vops:
+        .addr   fs_initrd_read      ; read
         .addr   0                   ; write
         .addr   0                   ; open
         .addr   0                   ; close
-        .addr   fs_initrd_readdir   ; readdir
-        .addr   fs_initrd_finddir   ; finddir
+        .addr   0                   ; readdir
+        .addr   0                   ; finddir
 
 .code
 
@@ -48,28 +109,99 @@ dev_device_vops:
 .proc initrd_init
         enter
 
-        pea     initrd_root_dir
-        pea     root_dir
+		jsr		vfs_init
+
+		; Get new vnode for root of initrd
+		pea		initrd_root_dir
+		pea		initrd_dir_vops
+		pea		VTYPE_DIRECTORY
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
+
+        lda     initrd_root_dir
+        pha
+        lda     root_vnode
+        pha
         jsr     mount_fs
         rep     #$30
         ply
         ply
 
+        pea     initrd_dev_dir
+		pea		0
+		pea		VTYPE_DIRECTORY
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
+
+        pea     initrd_init_file
+		pea		initrd_file_vops
+		pea		VTYPE_FILE
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
+
+        pea     initrd_sh_file
+		pea		initrd_file_vops
+		pea		VTYPE_FILE
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
+
+        pea     initrd_ls_file
+		pea		initrd_file_vops
+		pea		VTYPE_FILE
+		jsr		newvnode
+        rep     #$30
+        ply
+        ply
+        ply
+
+        ldx     initrd_root_dir
+        lda     #root_data
+        sta     a:vnode::impl,x
+
+        ldx     initrd_dev_dir
+        lda     #dev_data
+        sta     a:vnode::impl,x
+
+        ldx     initrd_init_file
+        lda     #init_data
+        sta     a:vnode::impl,x
+
+        ldx     initrd_sh_file
+        lda     #sh_data
+        sta     a:vnode::impl,x
+
+        ldx     initrd_ls_file
+        lda     #ls_data
+        sta     a:vnode::impl,x
+        
         leave
         rts
 .endproc
 
-; unsigned int fs_initrd_read(struct FSNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; unsigned int fs_initrd_read(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_initrd_read
         enter
-        
+
         ; Push number of bytes to read
         lda     z:arg 4 ; size
         pha
 
         ; Push source pointer
         ldx     z:arg 0 ; node
-        lda     a:FSNode::impl,x
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::data,y
         add     z:arg 2 ; offset
         pha
 
@@ -94,15 +226,14 @@ failed:
         bra     done
 .endproc
 
-; int fs_initrd_readdir(struct FSNode *node, unsigned int index, struct DirEnt *result)
+; int fs_initrd_readdir(struct vnode *node, unsigned int index, struct DirEnt *result)
 .proc fs_initrd_readdir
         enter
-        rep     #$30
 
         ; Fail if this is not the root
-        ; lda     z:arg 0 ; node
-        ; cmp     #initrd_root_dir
-        ; bne     failed
+        lda     z:arg 0 ; node
+        cmp     initrd_root_dir
+        jne     failed
 
         ; Skip if this is not index 0
         lda     z:arg 2 ; index
@@ -110,7 +241,10 @@ failed:
         jne     not_0
 
         ; Push source string
-        pea     initrd_dev_dir + FSNode::name
+        ldx     initrd_dev_dir
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
 
         ; Push destination string
         lda     z:arg 4 ; result
@@ -122,13 +256,13 @@ failed:
         ply
         ply
 
-        lda     initrd_dev_dir + FSNode::inode
+        lda     #0
         ldx     z:arg 4 ; result
         sta     a:DirEnt::inode,x
 
         ; Return 0 on success
         lda     #0
-        bra     done
+        jmp     done
 
 not_0:
         ; Skip if this is not index 1
@@ -137,7 +271,10 @@ not_0:
         jne     not_1
 
         ; Push source string
-        pea     initrd_sh_file + FSNode::name
+        ldx     initrd_ls_file
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
 
         ; Push destination string
         lda     z:arg 4 ; result
@@ -149,7 +286,7 @@ not_0:
         ply
         ply
 
-        lda     initrd_sh_file + FSNode::inode
+        lda     #1
         ldx     z:arg 4 ; result
         sta     a:DirEnt::inode,x
 
@@ -164,7 +301,10 @@ not_1:
         jne     not_2
 
         ; Push source string
-        pea     initrd_init_file + FSNode::name
+        ldx     initrd_init_file
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
 
         ; Push destination string
         lda     z:arg 4 ; result
@@ -176,7 +316,7 @@ not_1:
         ply
         ply
 
-        lda     initrd_init_file + FSNode::inode
+        lda     #2
         ldx     z:arg 4 ; result
         sta     a:DirEnt::inode,x
 
@@ -185,13 +325,16 @@ not_1:
         bra     done
 
 not_2:
-        ; Skip if this is not index 2
+        ; Skip if this is not index 3
         lda     z:arg 2 ; index
         cmp     #3
         jne     not_3
 
         ; Push source string
-        pea     initrd_ls_file + FSNode::name
+        ldx     initrd_sh_file
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
 
         ; Push destination string
         lda     z:arg 4 ; result
@@ -203,7 +346,7 @@ not_2:
         ply
         ply
 
-        lda     initrd_ls_file + FSNode::inode
+        lda     #3
         ldx     z:arg 4 ; result
         sta     a:DirEnt::inode,x
 
@@ -223,15 +366,17 @@ failed:
         bra     done
 .endproc
 
-; int fs_initrd_finddir(struct FSNode *node, char *name, struct FSNode *result)
+; int fs_initrd_finddir(struct vnode *node, char *name, struct vnode **result)
 .proc fs_initrd_finddir
         enter
-        rep     #$30
 
-try_0:
+loop:
         lda     z:arg 2 ; name
         pha
-        pea     initrd_root_dir + FSNode::name
+        ldx     initrd_root_dir
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
         jsr     strcmp
         rep     #$30
         ply
@@ -239,16 +384,9 @@ try_0:
         cmp     #0
         bne     try_1
 
-        ; Use memmove to fill result
-        pea     .sizeof(FSNode)
-        pea     initrd_root_dir
-        lda     z:arg 4 ; result
-        pha
-        jsr     memmove
-        rep     #$30
-        ply
-        ply
-        ply
+        ; Fill result
+        lda     initrd_root_dir
+        sta     (arg 4)
 
         ; Return 0
         lda     #0
@@ -257,23 +395,19 @@ try_0:
 try_1:
         lda     z:arg 2 ; name
         pha
-        pea     initrd_dev_dir + FSNode::name
+        ldx     initrd_dev_dir
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
         jsr     strcmp
         rep     #$30
         ply
         cmp     #0
         bne     try_2
 
-        ; Use memmove to fill result
-        pea     .sizeof(FSNode)
-        pea     initrd_dev_dir
-        lda     z:arg 4 ; result
-        pha
-        jsr     memmove
-        rep     #$30
-        ply
-        ply
-        ply
+        ; Fill result
+        lda     initrd_dev_dir
+        sta     (arg 4)
 
         ; Return 0
         lda     #0
@@ -282,23 +416,19 @@ try_1:
 try_2:
         lda     z:arg 2 ; name
         pha
-        pea     initrd_sh_file + FSNode::name
+        ldx     initrd_sh_file
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
         jsr     strcmp
         rep     #$30
         ply
         cmp     #0
         bne     try_3
 
-        ; Use memmove to fill result
-        pea     .sizeof(FSNode)
-        pea     initrd_sh_file
-        lda     z:arg 4 ; result
-        pha
-        jsr     memmove
-        rep     #$30
-        ply
-        ply
-        ply
+        ; Fill result
+        lda     initrd_sh_file
+        sta     (arg 4)
 
         ; Return 0
         lda     #0
@@ -307,23 +437,19 @@ try_2:
 try_3:
         lda     z:arg 2 ; name
         pha
-        pea     initrd_init_file + FSNode::name
+        ldx     initrd_init_file
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
         jsr     strcmp
         rep     #$30
         ply
         cmp     #0
         bne     try_4
 
-        ; Use memmove to fill result
-        pea     .sizeof(FSNode)
-        pea     initrd_init_file
-        lda     z:arg 4 ; result
-        pha
-        jsr     memmove
-        rep     #$30
-        ply
-        ply
-        ply
+        ; Fill result
+        lda     initrd_init_file
+        sta     (arg 4)
 
         ; Return 0
         lda     #0
@@ -332,23 +458,19 @@ try_3:
 try_4:
         lda     z:arg 2 ; name
         pha
-        pea     initrd_ls_file + FSNode::name
+        ldx     initrd_ls_file
+        ldy     a:vnode::impl,x
+        lda     a:initrd_entry::name,y
+        pha
         jsr     strcmp
         rep     #$30
         ply
         cmp     #0
         bne     try_5
 
-        ; Use memmove to fill result
-        pea     .sizeof(FSNode)
-        pea     initrd_ls_file
-        lda     z:arg 4 ; result
-        pha
-        jsr     memmove
-        rep     #$30
-        ply
-        ply
-        ply
+        ; Fill result
+        lda     initrd_ls_file
+        sta     (arg 4)
 
         ; Return 0
         lda     #0
@@ -356,7 +478,7 @@ try_4:
 
 try_5:
         bra     failed
-        
+
 done:
         leave
         rts
