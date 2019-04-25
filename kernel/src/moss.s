@@ -25,8 +25,6 @@
 
 .rodata
 
-dev_ttyS0_path:
-        .asciiz "/ttyS0"
 init_path:
         .asciiz "/init"
 root_path:
@@ -82,50 +80,20 @@ root_path:
 
         ; Setup system tick timer
         jsr     setup_systick_timer
-        
-        pea     dev_ttyS0_path
-        pea     5
-        pea     0
-        pea     $21F4
 
-        ; Setup stdin
-        pea     O_RDONLY
-        pea     dev_ttyS0_path
-        jsr     open
-        rep     #$30
-        ply
-        ply
-
-        ; Setup stdout
-        pea     O_WRONLY
-        pea     dev_ttyS0_path
-        jsr     open
-        rep     #$30
-        ply
-        ply
-
-        ; Setup stderr
-        pea     O_WRONLY
-        pea     dev_ttyS0_path
-        jsr     open
-        rep     #$30
-        ply
-        ply
-
-        pea     dev_ttyS0_path
-		jsr 	puts
-
-        ; cop     $0D
-        ; cmp     #0
-        ; bne     loop
+        cop     $0D
+        cmp     #0
+        bne     loop
 
         ; pea     root_path
         ; jsr     chdir
         ; rep     #$30
         ; ply
 
-        ; pea     init_path
-        ; cop     $0C
+        pea     NULL
+        pea     NULL
+        pea     init_path
+        jsr     execve
 
 loop:
         ; cop     2

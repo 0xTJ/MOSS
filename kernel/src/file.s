@@ -213,7 +213,7 @@ failed:
 
         ; Free the pointer to vnode
         pha
-        jsr     free
+        jsr     vrele
         rep     #$30
         ply
 

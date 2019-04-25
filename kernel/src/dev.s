@@ -35,7 +35,7 @@ last_dev_inode:
 dev_root_dir:
         .addr   0
 
-.data
+.rodata
 
 ; struct vops dev_root_dir_vops
 dev_root_dir_vops:
@@ -252,7 +252,7 @@ failed:
 ; int fs_dev_finddir(struct vnode *node, char *name, struct vnode **result)
 .proc fs_dev_finddir
         enter
-
+        
         ; Get device pointer from name
         lda     z:arg 2 ; name
         pha
@@ -294,9 +294,8 @@ failed:
 .constructor dev_init
 .proc dev_init
         enter
-        rep     #$30
 
-		jsr		vfs_init
+		; jsr		vfs_init
 
 		; Get new vnode for root of dev
 		pea		dev_root_dir
@@ -312,8 +311,8 @@ failed:
 
         lda     dev_root_dir
         pha
-        ; lda     initrd_dev_dir
-        lda     root_vnode
+        lda     initrd_dev_dir
+        ; lda     root_vnode
         pha
         jsr     mount_fs
         rep     #$30

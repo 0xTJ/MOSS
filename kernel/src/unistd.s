@@ -67,9 +67,10 @@ loop:
         bra     loop
 .endproc
 
-; pid_t vfork(void)
+; pid_t vfork_no_direct_call(void)
 ; Only to be called from syscall
-.proc vfork
+.global vfork_no_direct_call
+.proc vfork_no_direct_call
         jsr     clone_current_proc
         rep     #$30
 
@@ -428,9 +429,10 @@ failed:
         ; bra     done
 ; .endproc
 
-; int execve(const char *filename, char *const argv[], char *const envp[])
+; int execve_no_direct_call(const char *filename, char *const argv[], char *const envp[])
 ; Only to be called directly by syscall
-.proc execve
+.global execve_no_direct_call
+.proc execve_no_direct_call
         enter
 
         ; Open executable file

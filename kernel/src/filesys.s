@@ -94,7 +94,7 @@ start:
         jsr     skip_slashes
         rep     #$30
         ply
-        sta     z:arg 2    ; path
+        sta     z:arg 2 ; path
 
         ; Check for path being empty and jump to empty_path if it is.
         ldx     z:arg 2 ; path
@@ -120,7 +120,7 @@ start:
         pha
 
         ; Load path to X
-        ldx     z:arg 2
+        ldx     z:arg 2 ; path
 
         sep     #$20
 
@@ -470,16 +470,57 @@ not_found:
         bra     done
 .endproc
 
+.bss
+
+tmp:
+        .res    64
+
+.code
+
 ; int finddir_fs(struct vnode *node, char *name, struct vnode **result)
 .proc finddir_fs
         enter
-        rep     #$30
+        
+        ; ldy     z:arg 0
+        ; ldx     a:vnode::vops,y
+        ; lda     a:vops::finddir,x
+
+        ; pea     16
+        ; pea     tmp
+        ; lda     z:arg 0
+        ; pha
+        ; jsr     itoa
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
+
+        ; pea     tmp
+        ; lda     z:arg 2
+        ; pha
+; .import strlen
+        ; jsr     strlen
+        ; rep     #$30
+        ; ply
+
+        ; pha
+        ; pea     tmp
+        ; lda     z:arg 2
+        ; pha
+        ; pea     0
+; .import dev_ttyS0_write
+        ; jsr     dev_ttyS0_write
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
 
         ; Load node to x
         ldy     z:arg 0
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         ldx     a:vnode::vops,y
+        bze     not_found
         lda     a:vops::finddir,x
         bze     not_found
 

@@ -20,7 +20,6 @@ tmp_str:
 ; void o65_load(const uint8_t *o65, uint8_t *tbase, uint8_t *dbase, uint8_t *bbase, uint8_t *zbase)
 .proc o65_load
         enter   14
-        rep     #$30
 
         ; Stack variables:
         ;  0: uint8_t *segments_p
@@ -41,12 +40,11 @@ tmp_str:
 
         ; Copy from o65's text to load text
         ldx     z:arg 0 ; o65
-        ; Load o65 text pointer to A
-        lda     z:var 0 ; segments_p
         ; Push tlen
-        ldy     a:O65Header::tlen,x
-        phy
+        lda     a:O65Header::tlen,x
+        pha
         ; Push o65 text pointer
+        lda     z:var 0 ; segments_p
         pha
         ; Push load text pointer
         lda     z:arg 2 ; tbase
@@ -60,13 +58,12 @@ tmp_str:
 
         ; Copy from o65's data to load data
         ldx     z:arg 0 ; o65
-        ; Load o65 data pointer to A
+        ; Push dlen
+        lda     a:O65Header::dlen,x
+        pha
+        ; Push o65 data pointer
         lda     z:var 0 ; segments_p
         add     a:O65Header::tlen,x
-        ; Push dlen
-        ldy     a:O65Header::dlen,x
-        phy
-        ; Push o65 data pointer
         pha
         ; Push load data pointer
         lda     z:arg 4 ; dbase
@@ -403,7 +400,6 @@ done_loop:
 ; uint8_t *o65_reloc_tab_p(uint8_t *o65)
 .proc o65_reloc_tab_p
         enter
-        rep     #$30
 
         ; Skip to beginning of segments
         lda     z:arg 0 ; o65
