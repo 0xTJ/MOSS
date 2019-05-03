@@ -267,16 +267,14 @@ failed:
         ; Get pointer to vnode in A
         lda     a:Device::vnode,x
 
-        ; Reference this vnode
-        pha
+        ; Store vnode to result
+        sta     (arg 4)
+        
+        ; Reference vnode
         pha
         jsr     vref
         rep     #$30
         ply
-        pla
-
-        ; Store vnode to result
-        sta     (arg 4)
 
 		; Return 0
         lda     #0

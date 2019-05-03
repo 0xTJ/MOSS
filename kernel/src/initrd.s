@@ -185,7 +185,7 @@ initrd_file_vops:
         ldx     initrd_ls_file
         lda     #ls_data
         sta     a:vnode::impl,x
-        
+
         leave
         rts
 .endproc
@@ -370,7 +370,6 @@ failed:
 .proc fs_initrd_finddir
         enter
 
-loop:
         lda     z:arg 2 ; name
         pha
         ldx     initrd_root_dir
@@ -388,9 +387,7 @@ loop:
         lda     initrd_root_dir
         sta     (arg 4)
 
-        ; Return 0
-        lda     #0
-        jmp     done
+        bra     success
 
 try_1:
         lda     z:arg 2 ; name
@@ -409,9 +406,7 @@ try_1:
         lda     initrd_dev_dir
         sta     (arg 4)
 
-        ; Return 0
-        lda     #0
-        bra     done
+        bra     success
 
 try_2:
         lda     z:arg 2 ; name
@@ -430,9 +425,7 @@ try_2:
         lda     initrd_sh_file
         sta     (arg 4)
 
-        ; Return 0
-        lda     #0
-        bra     done
+        bra     success
 
 try_3:
         lda     z:arg 2 ; name
@@ -451,9 +444,7 @@ try_3:
         lda     initrd_init_file
         sta     (arg 4)
 
-        ; Return 0
-        lda     #0
-        bra     done
+        bra     success
 
 try_4:
         lda     z:arg 2 ; name
@@ -472,12 +463,20 @@ try_4:
         lda     initrd_ls_file
         sta     (arg 4)
 
-        ; Return 0
-        lda     #0
-        bra     done
+        bra     success
 
 try_5:
         bra     failed
+
+success:
+        ; Reference vnode
+        pha
+        jsr     vref
+        rep     #$30
+        ply
+
+        ; Return 0
+        lda     #0
 
 done:
         leave

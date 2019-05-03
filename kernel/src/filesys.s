@@ -265,11 +265,18 @@ failed:
         cmp     #VTYPE_DIRECTORY
         bne     invalid_type
 
-        ; Move mounted to A
-        txa
+        ; Reference vnode
+        lda     z:arg 2 ; mounted
+        pha
+        jsr     vref
+        rep     #$30
+        ply
+        
+        ; Load mounted to A
+        lda     z:arg 2 ; mounted
 
         ; Load mount_point into X
-        ldx     z:arg 0
+        ldx     z:arg 0 ; mount_point
 
         ; Store mounted into mount point's ptr
         sta     a:vnode::ptr,x
