@@ -9,7 +9,7 @@
 .bss
 
 null_driver:
-        .tag    CharDriver
+        .tag    DeviceDriver
 
 .rodata
 
@@ -25,14 +25,12 @@ null_name:
         ldx     #null_driver
 
         lda     #dev_null_write
-        sta     a:CharDriver::write,x
+        sta     a:DeviceDriver::write,x
 
-        pea     DEV_TYPE_CHAR
         pea     null_name
         pea     null_driver
-        jsr     register_char_driver
+        jsr     register_device
         rep     #$30
-        ply
         ply
         ply
 

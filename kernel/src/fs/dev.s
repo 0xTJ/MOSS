@@ -14,7 +14,6 @@
 .include "string.inc"
 
 .struct Device
-        type    .word
         driver  .addr
         name    .addr
         vnode   .addr
@@ -96,7 +95,7 @@ done:
         rts
 .endproc
 
-; unsigned int fs_dev_read(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; size_t fs_dev_read(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_read
         enter
 
@@ -108,18 +107,7 @@ done:
         ; If impl is NULL, not a device, fail
         bze     failed
 
-        ; Load device type to A
-        lda     a:Device::type,x
-
-        ; Is it a character device?
-        cmp     #DEV_TYPE_CHAR
-        beq     chardevice
-
-        ; Device type not recognized, fail
-        bra     failed
-
-chardevice:
-        ; Load char driver to X
+        ; Load driver to X
         lda     a:Device::driver,x
         tax
 
@@ -131,15 +119,12 @@ chardevice:
         lda     z:arg 6 ; buffer
         pha
         phx
-        jsr     (CharDriver::read,x)
+        jsr     (DeviceDriver::read,x)
         rep     #$30
         ply
         ply
         ply
         ply
-
-        ; Done read operation, return with value from device read
-        bra     done
 
 done:
         leave
@@ -150,24 +135,19 @@ failed:
         bra     done
 .endproc
 
-; unsigned int fs_dev_write(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; ssize_t fs_dev_write(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc fs_dev_write
         enter
 
         ; Load struct Device * to X
         ldx     z:arg 0 ; node
         lda     a:vnode::impl,x
-        bze     failed
         tax
 
-        lda     a:Device::type,x
+        ; If impl is NULL, not a device, fail
+        bze     failed
 
-        cmp     #DEV_TYPE_CHAR
-        beq     chardevice
-        bra     failed
-
-chardevice:
-        ; Load char driver to X
+        ; Load driver to X
         lda     a:Device::driver,x
         tax
 
@@ -179,17 +159,20 @@ chardevice:
         ldy     z:arg 6 ; buffer
         phy
         phx
-        jsr     (CharDriver::write,x)
+        jsr     (DeviceDriver::write,x)
         rep     #$30
         ply
         ply
         ply
         ply
 
-failed:
-
+done:
         leave
         rts
+
+failed:
+        lda     #$FFFF
+        bra     done
 .endproc
 
 ; int fs_dev_readdir(struct vnode *node, unsigned int index, struct DirEnt *result)
@@ -252,7 +235,7 @@ failed:
 ; int fs_dev_finddir(struct vnode *node, char *name, struct vnode **result)
 .proc fs_dev_finddir
         enter
-        
+
         ; Get device pointer from name
         lda     z:arg 2 ; name
         pha
@@ -269,7 +252,7 @@ failed:
 
         ; Store vnode to result
         sta     (arg 4)
-        
+
         ; Reference vnode
         pha
         jsr     vref
@@ -289,11 +272,9 @@ failed:
 .endproc
 
 ; void dev_init(void)
-.constructor dev_init
+.constructor dev_init, 6
 .proc dev_init
         enter
-
-		; jsr		vfs_init
 
 		; Get new vnode for root of dev
 		pea		dev_root_dir
@@ -310,19 +291,20 @@ failed:
         lda     dev_root_dir
         pha
         lda     initrd_dev_dir
-        ; lda     root_vnode
         pha
         jsr     mount_fs
         rep     #$30
         ply
         ply
 
+		; TODO: Check for success
+
         leave
         rts
 .endproc
 
-; void register_char_driver(struct CharDriver *driver, const char *name)
-.proc register_char_driver
+; void register_device(struct DeviceDriver *driver, const char *name)
+.proc register_device
         enter
 
         ; Allocate driver struct and put pointer into X
@@ -343,10 +325,6 @@ failed:
         lda     z:arg 2 ; name
         sta     a:Device::name,x
 
-        ; Store type to struct
-        lda     #DEV_TYPE_CHAR
-        sta     a:Device::type,x
-
         ; Reset next device
         stz     a:Device::next,x
 
@@ -358,7 +336,7 @@ failed:
 		add		#Device::vnode
 		pha		; Result location
 		pea		dev_device_vops
-		pea		VTYPE_CHARDEVICE
+		pea		VTYPE_DEVICE
 		jsr		newvnode
         rep     #$30
         ply

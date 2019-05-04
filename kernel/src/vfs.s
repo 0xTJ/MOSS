@@ -27,6 +27,7 @@ root_vnode:
 .code
 
 ; void vfs_init(void)
+.constructor vfs_init, 4
 .proc vfs_init
 		enter
 

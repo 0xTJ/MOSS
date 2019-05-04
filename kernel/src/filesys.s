@@ -291,7 +291,7 @@ invalid_type:
         rts
 .endproc
 
-; unsigned int read_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; size_t read_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc read_fs
         enter
         rep     #$30
@@ -329,7 +329,7 @@ done:
         rts
 .endproc
 
-; unsigned int write_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; ssize_t write_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .proc write_fs
         enter
         rep     #$30

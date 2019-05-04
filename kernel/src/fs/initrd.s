@@ -35,11 +35,11 @@ initrd_ls_file:
 .rodata
 
 init_o65:
-        .incbin "../../init/init.o65"
+        .incbin "../../../init/init.o65"
 sh_o65:
-        .incbin "../../sh/sh.o65"
+        .incbin "../../../sh/sh.o65"
 ls_o65:
-        .incbin "../../ls/ls.o65"
+        .incbin "../../../ls/ls.o65"
 
 root_name:
         .asciiz ""
@@ -105,11 +105,9 @@ initrd_file_vops:
 .code
 
 ; void initrd_init(void)
-.constructor initrd_init, 6
+.constructor initrd_init, 5
 .proc initrd_init
         enter
-
-		jsr		vfs_init
 
 		; Get new vnode for root of initrd
 		pea		initrd_root_dir

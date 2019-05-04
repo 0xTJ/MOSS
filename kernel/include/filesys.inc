@@ -6,9 +6,9 @@
 .global traverse_abs_path
 ; void mount_fs(struct VNode *mount_point, struct VNode *mounted)
 .global mount_fs
-; unsigned int read_fs(struct VNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; size_t read_fs(struct VNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .global read_fs
-; unsigned int write_fs(struct VNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
+; ssize_t write_fs(struct VNode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
 .global write_fs
 ; int open_fs(struct VNode *node, uint8_t read, uint8_t write)
 .global open_fs

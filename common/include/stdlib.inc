@@ -2,6 +2,7 @@
         quot    .word
         rem     .word
 .endstruct
+
 .struct udiv_t
         quot    .word
         rem     .word
