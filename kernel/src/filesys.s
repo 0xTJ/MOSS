@@ -27,14 +27,14 @@ loop:
 
         ; Reference the new one, release the old one, and load the new one to X
         phy
-        ; phx
-        ; phy
-        ; jsr     vref
-        ; rep     #$30
-        ; ply
-        ; jsr     vrele
-        ; rep     #$30
-        ; ply
+        phx
+        phy
+        jsr     vref
+        rep     #$30
+        ply
+        jsr     vrele
+        rep     #$30
+        ply
         plx
 
 skip_first:
@@ -271,7 +271,7 @@ failed:
         jsr     vref
         rep     #$30
         ply
-        
+
         ; Load mounted to A
         lda     z:arg 2 ; mounted
 
@@ -296,9 +296,20 @@ invalid_type:
         enter
         rep     #$30
 
-        ; Load node to x
+        ; Load node to Y
         ldy     z:arg 0
 
+        ; Take action based on type
+        lda     a:vnode::type,y
+        cmp     #VTYPE_FILE
+        cmp     #VTYPE_DIRECTORY
+        beq     use_vops
+        cmp     #VTYPE_DEVICE
+        beq     use_device_nums
+        bra     bad_type
+
+; Is a regular file or directory
+use_vops:
         ; Check if function exists in node and if it doesn't, exit with A = 0
         ldx     a:vnode::vops,y
         lda     a:vops::read,x
@@ -324,9 +335,15 @@ invalid_type:
         ply
         ply
 
+        bra     done
+
 done:
         leave
         rts
+
+bad_type:
+        lda     #$FFFF
+        bra     done
 .endproc
 
 ; ssize_t write_fs(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
@@ -334,9 +351,20 @@ done:
         enter
         rep     #$30
 
-        ; Load node to x
+        ; Load node to Y
         ldy     z:arg 0
 
+        ; Take action based on type
+        lda     a:vnode::type,y
+        cmp     #VTYPE_FILE
+        cmp     #VTYPE_DIRECTORY
+        beq     use_vops
+        cmp     #VTYPE_DEVICE
+        beq     use_device_nums
+        bra     bad_type
+
+; Is a regular file or directory
+use_vops:
         ; Check if function exists in node and if it doesn't, exit with A = 0
         ldx     a:vnode::vops,y
         lda     a:vops::write,x
@@ -362,9 +390,15 @@ done:
         ply
         ply
 
+        bra     done
+
 done:
         leave
         rts
+
+bad_type:
+        lda     #$FFFF
+        bra     done
 .endproc
 
 ; void open_fs(struct vnode *node, uint8_t read, uint8_t write)
@@ -372,9 +406,18 @@ done:
         enter
         rep     #$30
 
-        ; Load node to x
+        ; Load node to Y
         ldy     z:arg 0
 
+        ; Take action based on type
+        lda     a:vnode::type,y
+        cmp     #VTYPE_FILE
+        cmp     #VTYPE_DIRECTORY
+        beq     use_vops
+        bra     done
+
+; Is a regular file or directory
+use_vops:
         ; Check if function exists in node and if it doesn't, exit
         ldx     a:vnode::vops,y
         lda     a:vops::open,x
@@ -401,12 +444,15 @@ done:
         ply
         rep     #$10
 
-        ; Return 0
-        lda     #0
+        bra     done
 
 done:
         leave
         rts
+
+bad_type:
+        lda     #$FFFF
+        bra     done
 .endproc
 
 ; void close_fs(struct vnode *node)
@@ -414,9 +460,18 @@ done:
         enter
         rep     #$30
 
-        ; Load node to x
+        ; Load node to Y
         ldy     z:arg 0
 
+        ; Take action based on type
+        lda     a:vnode::type,y
+        cmp     #VTYPE_FILE
+        cmp     #VTYPE_DIRECTORY
+        beq     use_vops
+        bra     done
+
+; Is a regular file or directory
+use_vops:
         ; Check if function exists in node and if it doesn't, exit
         ldx     a:vnode::vops,y
         lda     a:vops::close,x
@@ -433,6 +488,8 @@ done:
         rep     #$30
         ply
 
+        bra     done
+
 done:
         leave
         rts
@@ -443,8 +500,13 @@ done:
         enter
         rep     #$30
 
-        ; Load node to x
+        ; Load node to Y
         ldy     z:arg 0
+
+        ; Fail if this isn't a directory
+        lda     a:vnode::type,y
+        cmp     #VTYPE_DIRECTORY
+        bne     bad_type
 
         ; Check if function exists in node and if it doesn't, exit with A = 0
         ldx     a:vnode::vops,y
@@ -468,26 +530,24 @@ done:
         ply
         ply
 
+        bra     done
+
 done:
         leave
         rts
 
 not_found:
+bad_type:
         lda     #$FFFF
         bra     done
 .endproc
-
-.bss
-
-tmp:
-        .res    64
 
 .code
 
 ; int finddir_fs(struct vnode *node, char *name, struct vnode **result)
 .proc finddir_fs
         enter
-        
+
         ; ldy     z:arg 0
         ; ldx     a:vnode::vops,y
         ; lda     a:vops::finddir,x
@@ -525,6 +585,11 @@ tmp:
         ; Load node to x
         ldy     z:arg 0
 
+        ; Fail if this isn't a directory
+        lda     a:vnode::type,y
+        cmp     #VTYPE_DIRECTORY
+        bne     bad_type
+
         ; Check if function exists in node and if it doesn't, exit with A = 0
         ldx     a:vnode::vops,y
         bze     not_found
@@ -548,11 +613,14 @@ tmp:
         ply
         ply
 
+        bra     done
+
 done:
         leave
         rts
 
 not_found:
+bad_type:
         lda     #$FFFF
         bra     done
 .endproc

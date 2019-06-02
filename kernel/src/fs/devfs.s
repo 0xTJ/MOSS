@@ -8,13 +8,13 @@
 .include "vfs.inc"
 .include "filesys.inc"
 .include "dev.inc"
+.include "fs/devfs.inc"
 .include "dirent.inc"
 .include "initrd.inc"
 .include "stdlib.inc"
 .include "string.inc"
 
 .struct Device
-        driver  .addr
         name    .addr
         vnode   .addr
         next    .addr
@@ -46,13 +46,13 @@ dev_root_dir_vops:
         .addr   fs_dev_finddir  ; finddir
 
 ; struct vops dev_root_dir_vops
-dev_device_vops:
-        .addr   fs_dev_read     ; read
-        .addr   fs_dev_write    ; write
-        .addr   0               ; open
-        .addr   0               ; close
-        .addr   0               ; readdir
-        .addr   0               ; finddir
+; dev_device_vops:
+        ; .addr   fs_dev_read     ; read
+        ; .addr   fs_dev_write    ; write
+        ; .addr   0               ; open
+        ; .addr   0               ; close
+        ; .addr   0               ; readdir
+        ; .addr   0               ; finddir
 
 .code
 
@@ -96,84 +96,84 @@ done:
 .endproc
 
 ; size_t fs_dev_read(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
-.proc fs_dev_read
-        enter
+; .proc fs_dev_read
+        ; enter
 
         ; Load struct Device * to X
-        ldx     z:arg 0 ; node
-        lda     a:vnode::impl,x
-        tax
+        ; ldx     z:arg 0 ; node
+        ; lda     a:vnode::impl,x
+        ; tax
 
         ; If impl is NULL, not a device, fail
-        bze     failed
+        ; bze     failed
 
         ; Load driver to X
-        lda     a:Device::driver,x
-        tax
+        ; lda     a:Device::driver,x
+        ; tax
 
         ; Call read with arguments
-        lda     z:arg 2 ; offset
-        pha
-        lda     z:arg 4 ; size
-        pha
-        lda     z:arg 6 ; buffer
-        pha
-        phx
-        jsr     (DeviceDriver::read,x)
-        rep     #$30
-        ply
-        ply
-        ply
-        ply
+        ; lda     z:arg 2 ; offset
+        ; pha
+        ; lda     z:arg 4 ; size
+        ; pha
+        ; lda     z:arg 6 ; buffer
+        ; pha
+        ; phx
+        ; jsr     (DeviceDriver::read,x)
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
+        ; ply
 
-done:
-        leave
-        rts
+; done:
+        ; leave
+        ; rts
 
-failed:
-        lda     #0
-        bra     done
-.endproc
+; failed:
+        ; lda     #0
+        ; bra     done
+; .endproc
 
 ; ssize_t fs_dev_write(struct vnode *node, unsigned int offset, unsigned int size, uint8_t *buffer)
-.proc fs_dev_write
-        enter
+; .proc fs_dev_write
+        ; enter
 
         ; Load struct Device * to X
-        ldx     z:arg 0 ; node
-        lda     a:vnode::impl,x
-        tax
+        ; ldx     z:arg 0 ; node
+        ; lda     a:vnode::impl,x
+        ; tax
 
         ; If impl is NULL, not a device, fail
-        bze     failed
+        ; bze     failed
 
         ; Load driver to X
-        lda     a:Device::driver,x
-        tax
+        ; lda     a:Device::driver,x
+        ; tax
 
         ; Call write with arguments
-        ldy     z:arg 2 ; offset
-        phy
-        ldy     z:arg 4 ; size
-        phy
-        ldy     z:arg 6 ; buffer
-        phy
-        phx
-        jsr     (DeviceDriver::write,x)
-        rep     #$30
-        ply
-        ply
-        ply
-        ply
+        ; ldy     z:arg 2 ; offset
+        ; phy
+        ; ldy     z:arg 4 ; size
+        ; phy
+        ; ldy     z:arg 6 ; buffer
+        ; phy
+        ; phx
+        ; jsr     (DeviceDriver::write,x)
+        ; rep     #$30
+        ; ply
+        ; ply
+        ; ply
+        ; ply
 
-done:
-        leave
-        rts
+; done:
+        ; leave
+        ; rts
 
-failed:
-        lda     #$FFFF
-        bra     done
-.endproc
+; failed:
+        ; lda     #$FFFF
+        ; bra     done
+; .endproc
 
 ; int fs_dev_readdir(struct vnode *node, unsigned int index, struct DirEnt *result)
 .proc fs_dev_readdir
@@ -303,8 +303,8 @@ failed:
         rts
 .endproc
 
-; void register_device(struct DeviceDriver *driver, const char *name)
-.proc register_device
+; void register_devfs_entry(int major_num, int minor_num, const char *name)
+.proc register_devfs_entry
         enter
 
         ; Allocate driver struct and put pointer into X
@@ -317,12 +317,8 @@ failed:
 		; If alloc failed, exit
         jeq     failed
 
-        ; Store driver to struct
-        lda     z:arg 0 ; driver
-        sta     a:Device::driver,x
-
         ; Store name string to struct
-        lda     z:arg 2 ; name
+        lda     z:arg 4 ; name
         sta     a:Device::name,x
 
         ; Reset next device
@@ -343,16 +339,19 @@ failed:
         ply
         ply
 
-		; Pull new device to A
-		pla
-
         ; Load new vnode to X
-        tax
+        plx
         ldy     a:Device::vnode,x
         tyx
 
 		; Store device pointer as impl in vnode
         sta     a:vnode::impl,x
+        
+        ; Store major and minor numbers
+        lda     z:arg 0 ; major_num
+        sta     a:vnode::major_num,x
+        lda     z:arg 2 ; minor_num
+        sta     a:vnode::minor_num,x
 
         ; Add to list
         ldy     devices_list

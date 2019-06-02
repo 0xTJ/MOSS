@@ -33,11 +33,9 @@
 .endproc
 
 ; void *malloc(size_t size)
-.export malloc
 .proc malloc
         enter
 
-        rep     #$30
         lda     z:arg 0 ; size
         ldx     #__HEAP_LOAD__
         jmp     skip_next_inc
@@ -94,23 +92,22 @@ skip_resize:
 
 not_found:   ; Y will contain NULL if it was not found
         tya
+
         leave
         rts
 .endproc
 
-
 ; void free(void *ptr)
-.export free
 .proc free
         enter
 
         lda     z:arg 0 ; ptr
         bze     done
-        
+
         sub     #.sizeof(HeapTag)
         tax
         stz     a:HeapTag::flags,x
-        
+
 done:
         leave
         rts

@@ -12,6 +12,8 @@ VTYPE_MOUNTPOINT   = $08
         usecount    .word
         impl        .addr
         ptr         .addr
+        major_num   .word
+        minor_num   .word
 .endstruct
 
 .struct vops

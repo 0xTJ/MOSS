@@ -7,6 +7,7 @@
 .include "functions.inc"
 .include "proc.inc"
 .include "dev.inc"
+.include "fs/devfs.inc"
 .include "uart.inc"
 
 .bss
@@ -39,8 +40,9 @@ ttyS0_name:
 
         ; Register driver with kernel
         pea     ttyS0_name
-        pea     ttyS0_driver
-        jsr     register_device
+        pea     0
+        pea     1
+        jsr     register_devfs_entry
         rep     #$30
         ply
         ply

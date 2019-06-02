@@ -56,6 +56,18 @@ root_path_str:
         cmp     #$0000
         beq     failed
 
+        ; Zero-fill struct
+        pha
+        pea     .sizeof(Process)
+        pea     0
+        pha
+        jsr     memset
+        rep     #$30
+        ply
+        ply
+        ply
+        pla
+
         ; Store struct as first process and as current process
         sta     proc_table + 0
         sta     current_process_p
@@ -66,37 +78,13 @@ root_path_str:
         ; Set process as own next in execution chain
         sta     a:Process::next,x
 
-        ; Set as PID 0 and own parent
+        ; Set as PID 0 and PPID 0
         stz     a:Process::pid,x
         stz     a:Process::ppid,x
 
         ; Set as running
         lda     #PROCESS_READY
         sta     a:Process::state,x
-
-        ; Clear segment bases, they aren't used and shouldn't be deleted
-        stz     a:Process::text_base,x
-        stz     a:Process::data_base,x
-        stz     a:Process::bss_base,x
-        stz     a:Process::zero_base,x
-        stz     a:Process::stack_base,x
-
-        ; Set working directory to root
-        stz     a:Process::working_dir,x
-
-        ; Clear file descriptors
-        pea     .sizeof(Process::files_p)
-        pea     0
-        lda     current_process_p
-        add     #Process::files_p
-        pha
-        jsr     memset
-        rep     #$30
-        ply
-        ply
-        ply
-
-        stz     disable_scheduler
 
 done:
         leave
@@ -174,54 +162,26 @@ done:
 ; Properly setting SP must be managed by calling function.
 ; Set to not running.
 .proc clone_current_proc
-        enter
+        enter   6
+
+        ; 0: struct Process *new_proc
 
         ; Get new process handle
         jsr     create_proc
+
+        ; Save new process
+        sta     z:var 0 ; new_proc
 
         ; Check for failure
         cmp     #0
         beq     failed
 
-        ; Disable interrupts to safely modify current process
-        php
-        sei
+        inc disable_scheduler
 
-        ; Copy processor struct pointer to X
-        tax
+        ; Setup process info
 
-        ; Save PID and next for later
-        ldy     a:Process::pid,x
-        phy
-        ldy     a:Process::next,x
-        phy
-
-        ; Save process struct pointer for later
-        phx
-
-        ; Load current process struct
-        ldx     current_process_p
-
-        ; Copy process info
-        pea     .sizeof(Process)
-        phx     ; Current process struct pointer
-        pha     ; New process struct pointer
-        jsr     memcpy
-        rep     #$30
-        ply
-        ply
-        ply
-
-        ; Restore new process struct pointer
-        plx
-
-        ; Restore PID and next
-        pla
-        sta     a:Process::next,x
-        lda     a:Process::pid,x
-        sta     a:Process::ppid,x
-        pla
-        sta     a:Process::pid,x
+        ; Load new process struct to X
+        ldx     z:var 0 ; new_proc
 
         ; Reset SP to arbitrary value
         lda     #$DEAD
@@ -231,10 +191,32 @@ done:
         lda     #PROCESS_CREATED
         sta     a:Process::state,x
 
-        txa
+        ; Copy file table
+        pea     .sizeof(Process::files_p)
+        lda     current_process_p   ; Current process struct pointer
+        add     #Process::files_p
+        pha
+        txa                         ; New process struct pointer
+        add     #Process::files_p
+        pha
+        jsr     memcpy
+        rep     #$30
+        ply
+        ply
+        ply
 
-        ; Enable interrupts if they were disabled
-        plp
+        ; Load new process struct to X and current process struct to Y
+        ldx     z:var 0 ; new_proc
+        ldy     current_process_p
+
+        ; Copy working directory
+        lda     a:Process::working_dir,y
+        sta     a:Process::working_dir,x
+
+        dec disable_scheduler
+
+        ; Load new process struct pointer to X
+        lda     z:var 0 ; new_proc
 
 done:
         leave

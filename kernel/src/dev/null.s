@@ -5,6 +5,7 @@
 
 .include "functions.inc"
 .include "dev.inc"
+.include "fs/devfs.inc"
 
 .bss
 
@@ -28,8 +29,9 @@ null_name:
         sta     a:DeviceDriver::write,x
 
         pea     null_name
-        pea     null_driver
-        jsr     register_device
+        pea     0
+        pea     0
+        jsr     register_devfs_entry
         rep     #$30
         ply
         ply

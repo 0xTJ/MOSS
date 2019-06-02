@@ -19,8 +19,13 @@
 .segment "ROM_LOAD"
 
         ; Equivalent to .asciiz "WDC"
-        EOR     ['D'],Y
-        EOR     0,S
+        ; EOR     ['D'],Y
+        ; EOR     0,S
+        
+        nop
+        nop
+        nop
+        nop
         
         jmp     init
 
@@ -29,10 +34,6 @@
 
 .export init
 init:
-        ; Equivalent to .asciiz "WDC"
-        ; EOR     ['D'],Y
-        ; EOR     0,S
-
         ; Setup native 16-bit mode
         sei
         cld
